@@ -1,0 +1,22 @@
+.footer {
+  background-color: var(--secondary-color);
+  color: var(--text-light);
+  padding: 2rem;
+  text-align: center;
+  margin-top: 4rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.links {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+.links a {
+  color: var(--text-light);
+}
