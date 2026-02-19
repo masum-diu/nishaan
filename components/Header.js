@@ -34,7 +34,7 @@ const Header = () => {
 
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
-      <Typography variant="h6" sx={{ my: 2 }}>
+      <Typography variant="h6" sx={{ my: 2 ,display: 'flex', alignItems: 'center', gap: 1,justifyContent:"center",fontWeight:"bold",color:"#2A6498"}}>
         Nishaan <VerifiedIcon/>
       </Typography>
       <List>
@@ -81,7 +81,7 @@ const Header = () => {
             </Typography>
             <Box sx={{ display: { xs: 'none', md: 'block' } }}>
               {navItems.map((item) => (
-                <Button key={item.label} component={Link} href={item.href} sx={{ color: 'var(--text-color)', textTransform: 'capitalize' }}>
+                <Button key={item.label} component={Link} href={item.href} sx={{ color: 'var(--text-color)', textTransform: 'capitalize' ,outline:"none"}}>
                   {item.label}
                 </Button>
               ))}
