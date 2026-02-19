@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import {
   Box,
@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
+import { useCart } from "./CartContext";
 
 // In a real app, you'd fetch this from an API based on the ID
 const dummyProducts = [
@@ -67,12 +68,41 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const { id } = router.query;
 
+  const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [error, setError] = useState("");
 
   // Find the product from the dummy data.
   // In a real app, you would fetch this data using the `id`.
   const product = dummyProducts.find((p) => p.id === parseInt(id));
+
+  // Set a default size when the product loads
+  useEffect(() => {
+    if (product && product.sizes.length > 0) {
+      setSelectedSize(product.sizes[0]);
+    }
+  }, [product]);
+
+  const handleAddToCart = () => {
+    if (!selectedSize) {
+      setError("Please select a size.");
+      return;
+    }
+    setError("");
+    addToCart({ ...product, quantity, size: selectedSize });
+    // Optionally, show a success message/toast
+    alert(`${product.name} (Size: ${selectedSize}) added to cart!`);
+  };
+
+  const handleBuyNow = () => {
+    if (!selectedSize) {
+      setError("Please select a size.");
+      return;
+    }
+    addToCart({ ...product, quantity, size: selectedSize });
+    router.push("/checkout");
+  };
 
   if (!product) {
     return (
@@ -146,6 +176,12 @@ export default function ProductDetailPage() {
                 ))}
               </Stack>
 
+              {error && (
+                <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                  {error}
+                </Typography>
+              )}
+
               {/* Quantity Selector */}
               <Typography fontWeight="bold">Quantity:</Typography>
               <Stack direction="row" alignItems="center" spacing={1}>
@@ -167,10 +203,10 @@ export default function ProductDetailPage() {
 
               {/* Action Buttons */}
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <Button variant="contained" size="large" fullWidth>
+                <Button variant="contained" size="large" fullWidth onClick={handleAddToCart} disabled={!product.inStock}>
                   Add to Cart
                 </Button>
-                <Button variant="outlined" size="large" fullWidth>
+                <Button variant="outlined" size="large" fullWidth onClick={handleBuyNow} disabled={!product.inStock}>
                   Buy Now
                 </Button>
               </Stack>
