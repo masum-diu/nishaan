@@ -1,9 +1,10 @@
-import React from 'react'
+import { Box, Container } from "@mui/material";
+import React from "react";
 
 function home() {
-  return (
-    <div>Home</div>
-  )
+  return   <Container maxWidth="lg">
+    <Box >Home</Box>
+    </Container>
 }
 
-export default home
+export default home;

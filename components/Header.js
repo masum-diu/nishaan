@@ -15,10 +15,12 @@ import {
   Typography,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import VerifiedIcon from '@mui/icons-material/Verified';
 const navItems = [
   { label: 'Home', href: '/' },
-  { label: 'All Products', href: '/products' },
+  { label: 'Shop', href: '/products' },
   { label: 'About Us', href: '/about' },
   { label: 'Contact Us', href: '/contact' },
 ];
@@ -33,7 +35,7 @@ const Header = () => {
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
       <Typography variant="h6" sx={{ my: 2 }}>
-        eCommerce
+        Nishaan <VerifiedIcon/>
       </Typography>
       <List>
         {navItems.map((item) => (
@@ -68,22 +70,25 @@ const Header = () => {
               sx={{
                 flexGrow: 1,
                 fontWeight: 700,
-                color: 'var(--secondary-color)',
+                color: '#2A6498',
                 textDecoration: 'none',
+                display:"flex",
+                alignItems:"center",
+                gap:1
               }}
             >
-              eCommerce
+              Nishaan <VerifiedIcon color='#2A6498'/>
             </Typography>
             <Box sx={{ display: { xs: 'none', md: 'block' } }}>
               {navItems.map((item) => (
-                <Button key={item.label} component={Link} href={item.href} sx={{ color: 'var(--text-color)' }}>
+                <Button key={item.label} component={Link} href={item.href} sx={{ color: 'var(--text-color)', textTransform: 'capitalize' }}>
                   {item.label}
                 </Button>
               ))}
             </Box>
             <Box sx={{ display: { xs: 'none', sm: 'block' }, ml: 2 }}>
-              <Button component={Link} href="/cart" variant="outlined" sx={{ mr: 1 }}>Cart</Button>
-              <Button component={Link} href="/account" variant="contained">Account</Button>
+              <Button component={Link} href="/cart" variant="outlined" sx={{ mr: 1 }}><ShoppingCartIcon /></Button>
+              <Button component={Link} href="/account" variant="contained"><AccountCircleIcon /></Button>
             </Box>
           </Toolbar>
         </Container>

@@ -6,8 +6,8 @@ const Footer = () => {
     <Box
       component="footer"
       sx={{
-        bgcolor: 'var(--secondary-color)',
-        color: 'var(--text-light)',
+        bgcolor: '#585864',
+        color: '#fff',
         py: 4,
         mt: 8,
       }}
