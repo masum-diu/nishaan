@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
-import { useCart } from "./CartContext";
+import { useCart } from "../../lib/CartContext";
 
 // In a real app, you'd fetch this from an API based on the ID
 const dummyProducts = [

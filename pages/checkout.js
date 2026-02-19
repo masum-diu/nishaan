@@ -14,7 +14,7 @@ import {
   CardMedia,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { useCart } from "./products/CartContext";
+import { useCart } from "../lib/CartContext";
 import { useRouter } from "next/router";
 
 function CheckoutPage() {
