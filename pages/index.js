@@ -1,4 +1,3 @@
-"use client";
 
 import React from "react";
 import {
@@ -18,6 +17,7 @@ import { Autoplay, Pagination } from "swiper/modules";
 
 import "swiper/css";
 import "swiper/css/pagination";
+import { useRouter } from "next/router";
 
 export default function Home() {
   const heroBanners = [
@@ -49,7 +49,7 @@ export default function Home() {
     { id: 5, name: "Laptop",img:"/assets/eclectg.jpg" },
     { id: 6, name: "Cosmetics",img:"/assets/eclectg.jpg" },
   ];
-
+const router = useRouter();
   return (
     <Box  sx={{ pt: 2 }}>
       <Container maxWidth="lg">
@@ -96,6 +96,7 @@ export default function Home() {
           {featuredProducts.map((product) => (
             <SwiperSlide key={product.id}>
               <Card
+                onClick={() => router.push(`/products/${product.id}`)}
                 sx={{
                   my: 2,
                   borderRadius: 3,
@@ -144,6 +145,7 @@ export default function Home() {
             </Typography>
           </Box>
           <Button
+            onClick={() => router.push("/products")}
             variant="contained"
             sx={{
               bgcolor: "#fff",
@@ -165,6 +167,7 @@ export default function Home() {
           {categories.map((category) => (
             <Grid size={{ xs: 12, sm: 6, md: 4 }}key={category.id}>
               <Card
+                onClick={() => router.push("/products")}
                 sx={{
                   position: "relative",
                   borderRadius: 3,
@@ -217,6 +220,7 @@ export default function Home() {
           {bestSelling.map((product) => (
             <Grid size={{ xs: 12, sm: 6, md: 3 }} key={product.id}>
               <Card
+                onClick={() => router.push(`/products/${product.id}`)}
                 sx={{
                   borderRadius: 4,
                   overflow: "hidden",
