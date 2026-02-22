@@ -90,9 +90,9 @@ export default function ProductDetailPage() {
       return;
     }
     setError("");
-    addToCart({ ...product, quantity, size: selectedSize });
+     addToCart({ ...product, quantity, size: selectedSize });
     // Optionally, show a success message/toast
-    alert(`${product.name} (Size: ${selectedSize}) added to cart!`);
+    // alert(`${product.name} (Size: ${selectedSize}) added to cart!`);
   };
 
   const handleBuyNow = () => {

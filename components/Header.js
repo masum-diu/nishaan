@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   Container,
+  Badge,
   Drawer,
   IconButton,
   List,
@@ -18,6 +19,8 @@ import MenuIcon from '@mui/icons-material/Menu';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import VerifiedIcon from '@mui/icons-material/Verified';
+import { useCart } from '@/lib/CartContext';
+
 const navItems = [
   { label: 'Home', href: '/' },
   { label: 'Shop', href: '/products' },
@@ -27,6 +30,7 @@ const navItems = [
 
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { cartCount } = useCart();
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
@@ -87,8 +91,12 @@ const Header = () => {
               ))}
             </Box>
             <Box sx={{ display: { xs: 'none', sm: 'block' }, ml: 2 }}>
-              <Button component={Link} href="/cart" variant="outlined" sx={{ mr: 1 }}><ShoppingCartIcon /></Button>
-              <Button component={Link} href="/account" variant="contained"><AccountCircleIcon /></Button>
+              <IconButton component={Link} href="/cart" sx={{ mr: 1, color: 'var(--text-color)' }}>
+                <Badge badgeContent={cartCount} color="error">
+                  <ShoppingCartIcon />
+                </Badge>
+              </IconButton>
+              <Button component={Link} href="/account" variant="contained" startIcon={<AccountCircleIcon />}>Account</Button>
             </Box>
           </Toolbar>
         </Container>
