@@ -142,7 +142,7 @@ export default function ProductDetailPage() {
       <Container maxWidth="lg">
         <Grid container spacing={5}>
           {/* Left Side: Product Image */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Box
               component="img"
               src={product.image}
@@ -156,7 +156,7 @@ export default function ProductDetailPage() {
           </Grid>
 
           {/* Right Side: Product Details */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Stack spacing={2}>
               <Typography variant="h4" fontWeight="bold">
                 {product.name}
