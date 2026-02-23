@@ -15,6 +15,9 @@ const navItems = [
   { text: 'Add Product', icon: <AddCircleOutlineIcon />, href: '/admin/add-product' },
   { text: 'Orders', icon: <ShoppingBagIcon />, href: '/admin/orders' },
   { text: 'Customers', icon: <PeopleIcon />, href: '/admin/customers' },
+  { text: 'Categories', icon: <ShoppingBagIcon />, href: '/admin/categories' },
+  { text: 'Banners', icon: <ShoppingBagIcon />, href: '/admin/banners' },
+
 ];
 
 const AdminLayout = ({ children }) => {

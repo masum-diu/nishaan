@@ -26,11 +26,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import supabase from "@/lib/createClient";
 
-// Dummy / Supabase fetch replace korte paren
-const dummyProducts = [
-  { id: 1, name: "Model 483", price: 1950, oldPrice: 2890, sizes: [40, 41, 42], collection: "flash" },
-  { id: 2, name: "Model 482", price: 2100, oldPrice: 2800, sizes: [39, 40], collection: "deals" },
-];
+
 
 export default function ProductsAdminPage() {
   const [products, setProducts] = useState([]);
@@ -48,7 +44,7 @@ export default function ProductsAdminPage() {
     collection: "",
     image: null,
   });
-console.log(formData)
+
    useEffect(() => {
            const fetchProducts = async () => {
         const { data, error } = await supabase
