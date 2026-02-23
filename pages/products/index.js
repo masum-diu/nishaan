@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     Box,
     Container,
@@ -16,83 +16,80 @@ import {
     Chip,
     Stack,
     Button,
+    CircularProgress,
 } from "@mui/material";
 import { useRouter } from "next/router";
+import supabase from "@/lib/createClient";
 
 export default function ShopPage() {
     // ================= DUMMY DATA =================
-    const dummyProducts = [
-        {
-            id: 1,
-            name: "Model Code 483 – Running Sneaker",
-            price: 1950,
-            oldPrice: 2890,
-            collection: "discount",
-            inStock: true,
-            sizes: [40, 41, 42, 43, 44],
-        },
-        {
-            id: 2,
-            name: "Model Code 482 – Running Sneaker",
-            price: 2100,
-            oldPrice: 2800,
-            collection: "flash",
-            inStock: true,
-            sizes: [39, 40, 41],
-        },
-        {
-            id: 3,
-            name: "Model Code 481 – Running Sneaker",
-            price: 1750,
-            oldPrice: 2500,
-            collection: "deals",
-            inStock: false,
-            sizes: [42, 43, 44],
-        },
-        {
-            id: 4,
-            name: "Model Code 480 – Running Sneaker",
-            price: 1999,
-            oldPrice: 2999,
-            collection: "all",
-            inStock: true,
-            sizes: [40, 41, 42],
-        },
-    ];
+
 
     // ================= FILTER STATE =================
     const [collection, setCollection] = useState("all");
     const [inStockOnly, setInStockOnly] = useState(false);
     const [selectedSizes, setSelectedSizes] = useState([]);
     const router = useRouter();
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+         const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.log("Error:", error.message);
+      } else {
+        setProducts(data);
+      }
+
+      setLoading(false);
+    };
+    fetchProducts();
+
+    }, []);
 
     // ================= SIZE HANDLER =================
-    const handleSizeChange = (size) => {
-        setSelectedSizes((prev) =>
-            prev.includes(size)
-                ? prev.filter((s) => s !== size)
-                : [...prev, size]
-        );
-    };
+  const handleSizeChange = (size) => {
+    setSelectedSizes((prev) =>
+      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
+    );
+  };
 
-    // ================= FILTER LOGIC =================
-    const filteredProducts = useMemo(() => {
-        return dummyProducts.filter((product) => {
-            const matchCollection =
-                collection === "all" || product.collection === collection;
+  // ================= FILTER LOGIC =================
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const matchCollection =
+        collection === "all" || product.collection === collection;
 
-            const matchStock =
-                !inStockOnly || product.inStock === true;
+      const matchStock = !inStockOnly || product.stock > 0;
 
-            const matchSize =
-                selectedSizes.length === 0 ||
-                product.sizes.some((size) =>
-                    selectedSizes.includes(size)
-                );
+      const matchSize =
+        !product.sizes ||
+        selectedSizes.length === 0 ||
+        product.sizes.some((size) => selectedSizes.includes(Number(size)));
 
-            return matchCollection && matchStock && matchSize;
-        });
-    }, [collection, inStockOnly, selectedSizes]);
+      return matchCollection && matchStock && matchSize;
+    });
+  }, [products, collection, inStockOnly, selectedSizes]);
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "50vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
     return (
         <Box sx={{ py: 5 }}>
@@ -224,7 +221,8 @@ export default function ShopPage() {
                                             component="img"
                                             sx={{ width: '100%' }}
                                             height="220"
-                                            image="/assets/sun.webp"
+                                            image={product.image}
+                                            alt={product.name}
                                         />
 
                                         <CardContent
@@ -251,7 +249,7 @@ export default function ShopPage() {
                                                     </Typography>
                                                 </Stack>
 
-                                                {!product.inStock && (
+                                                {!product.stock && (
                                                     <Typography color="error" mt={1}>
                                                         Out of Stock
                                                     </Typography>
