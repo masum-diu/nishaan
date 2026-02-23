@@ -245,7 +245,7 @@ export default function ShopPage() {
                                                         sx={{ textDecoration: "line-through" }}
                                                         color="text.secondary"
                                                     >
-                                                        Tk {product.oldPrice}
+                                                        Tk {product.old_price}
                                                     </Typography>
                                                 </Stack>
 

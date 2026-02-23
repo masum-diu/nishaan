@@ -177,7 +177,7 @@ export default function ProductDetailPage() {
                   color="text.secondary"
                   sx={{ textDecoration: "line-through" }}
                 >
-                  Tk {product.oldPrice}
+                  Tk {product.old_price}
                 </Typography>
               </Stack>
 
