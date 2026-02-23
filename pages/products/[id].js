@@ -11,10 +11,12 @@ import {
   Chip,
   Divider,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import { useCart } from "../../lib/CartContext";
+import supabase from "@/lib/createClient";
 
 // In a real app, you'd fetch this from an API based on the ID
 const dummyProducts = [
@@ -67,16 +69,35 @@ const dummyProducts = [
 export default function ProductDetailPage() {
   const router = useRouter();
   const { id } = router.query;
-
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState(null);
   const [error, setError] = useState("");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Find the product from the dummy data.
   // In a real app, you would fetch this data using the `id`.
-  const product = dummyProducts.find((p) => p.id === parseInt(id));
+  const product = products.find((p) => p.id === id);
+  console.log(products, "products lists")
+ useEffect(() => {
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select("*")
+        .order("created_at", { ascending: false });
 
+      if (error) {
+        console.log("Error:", error.message);
+      } else {
+        setProducts(data);
+      }
+
+      setLoading(false);
+    };
+
+    fetchProducts();
+  }, []);
   // Set a default size when the product loads
   useEffect(() => {
     if (product && product.sizes.length > 0) {
@@ -104,10 +125,14 @@ export default function ProductDetailPage() {
     router.push("/checkout");
   };
 
-  if (!product) {
+  
+  if (loading) {
     return (
-      <Container sx={{ py: 5, textAlign: "center" }}>
-        <Typography variant="h5">Product not found!</Typography>
+      <Container sx={{ py: 10, textAlign: "center" }}>
+        <CircularProgress />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Loading product...
+        </Typography>
       </Container>
     );
   }
@@ -137,7 +162,7 @@ export default function ProductDetailPage() {
                 {product.name}
               </Typography>
 
-              {product.inStock ? (
+              {product.stock ? (
                 <Chip label="In Stock" color="success" sx={{ width: "fit-content" }} />
               ) : (
                 <Chip label="Out of Stock" color="error" sx={{ width: "fit-content" }} />
@@ -203,10 +228,11 @@ export default function ProductDetailPage() {
 
               {/* Action Buttons */}
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <Button variant="contained" size="large" fullWidth onClick={handleAddToCart} disabled={!product.inStock}>
+                <Button variant="contained" size="large" fullWidth onClick={handleAddToCart} disabled={!product.stock
+}>
                   Add to Cart
                 </Button>
-                <Button variant="outlined" size="large" fullWidth onClick={handleBuyNow} disabled={!product.inStock}>
+                <Button variant="outlined" size="large" fullWidth onClick={handleBuyNow} disabled={!product.stock}>
                   Buy Now
                 </Button>
               </Stack>

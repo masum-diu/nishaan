@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -10,48 +10,107 @@ import {
   CardContent,
   Button,
   Stack,
+  CircularProgress,
 } from "@mui/material";
 
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 
+
 import "swiper/css";
 import "swiper/css/pagination";
 import { useRouter } from "next/router";
+import supabase from "@/lib/createClient";
 
 export default function Home() {
-  const heroBanners = [
-    { id: 1, src: "/assets/banner3.jpg", alt: "Sale Banner 1" },
-    { id: 2, src: "/assets/banner3.jpg", alt: "Sale Banner 2" },
-    { id: 3, src: "/assets/banner3.jpg", alt: "Sale Banner 3" },
-  ];
+  const [products, setProducts] = useState([]);
+  const [categorie, setCategorie] = useState([]);
+  const [banners, setBanners] = useState([]);
+  const [loading, setLoading] = useState(true);
+console.log(products,"all products")
+const bestSellingProducts = products.filter(product => product.is_best_selling);
+  useEffect(() => {
+    const fetchBanners = async () => {
+      const { data, error } = await supabase
+        .from("banners")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
 
-  const featuredProducts = [
-    { id: 1, name: "Classic Wrist Watch", price: "1,500", image: "/assets/sun.webp" },
-    { id: 2, name: "Modern Sneakers", price: "2,200", image: "/assets/sun.webp" },
-    { id: 3, name: "Leather Handbag", price: "3,100", image: "/assets/sun.webp" },
-    { id: 4, name: "Wireless Earbuds", price: "4,500", image: "/assets/sun.webp" },
-    { id: 5, name: "Stylish Sunglasses", price: "800", image: "/assets/sun.webp" },
-  ];
+      if (error) {
+        console.log(error);
+      } else {
+        setBanners(data);
+      }
+    };
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select("*")
+        .order("created_at", { ascending: false });
 
-  const bestSelling = [
-    { id: 1, name: "Gaming Laptop", price: "85,000", oldPrice: "95,000", discount: 10, image: "/assets/denim.jpg" },
-    { id: 2, name: "Smart TV 4K", price: "48,000", oldPrice: "55,000", discount: 12, image: "/assets/denim.jpg" },
-    { id: 3, name: "Running Shoes", price: "3,200", oldPrice: "4,000", discount: 20, image: "/assets/sun.webp" },
-    { id: 4, name: "Denim Jacket", price: "1,800", oldPrice: "2,500", discount: 28, image: "/assets/sun.webp" },
-  ];
+      if (error) {
+        console.log("Error:", error.message);
+      } else {
+        setProducts(data);
+      }
 
-  const categories = [
-    { id: 1, name: "Electronics",img:"/assets/eclectg.jpg" },
-    { id: 2, name: "Fashion",img:"/assets/eclectg.jpg" },
-    { id: 3, name: "Shoes",img:"/assets/eclectg.jpg" },
-    { id: 4, name: "Watch",img:"/assets/eclectg.jpg" },
-    { id: 5, name: "Laptop",img:"/assets/eclectg.jpg" },
-    { id: 6, name: "Cosmetics",img:"/assets/eclectg.jpg" },
-  ];
-const router = useRouter();
+      setLoading(false);
+    };
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.log("Error:", error.message);
+      } else {
+        setCategorie(data);
+      }
+
+      setLoading(false);
+    };
+
+    fetchProducts();
+    fetchBanners();
+    fetchCategories();
+  }, []);
+  // useEffect(() => {
+  //   const fetchProducts = async () => {
+  //     const { data, error } = await supabase
+  //       .from('banners')
+  //       .select("*")
+  //       .order("created_at", { ascending: false });
+
+  //     if (error) {
+  //       console.log("Error:", error.message);
+  //     } else {
+  //       setProducts(data);
+  //     }
+
+  //     setLoading(false);
+  //   };
+
+  //   fetchProducts();
+  // }, []);
+
+
+
+
+  const router = useRouter();
+ if (loading) {
   return (
-    <Box  sx={{ pt: 2 }}>
+    <Container sx={{ py: 10, textAlign: "center" }}>
+      <CircularProgress />
+      <Typography variant="h6" sx={{ mt: 2 }}>
+        Loading product...
+      </Typography>
+    </Container>
+  );
+}
+  return (
+    <Box sx={{ pt: 2 }}>
       <Container maxWidth="lg">
 
         {/* ================= HERO SLIDER ================= */}
@@ -61,12 +120,13 @@ const router = useRouter();
           pagination={{ clickable: true }}
           loop
         >
-          {heroBanners.map((banner) => (
+          {banners.map((banner) => (
             <SwiperSlide key={banner.id}>
               <Box
                 component="img"
-                src={banner.src}
-                alt={banner.alt}
+                src={banner.image}
+                alt={banner.title}
+                onClick={() => router.push("/products")}
                 sx={{
                   width: "100%",
                   height: { xs: 220, md: 420 },
@@ -93,7 +153,7 @@ const router = useRouter();
             1200: { slidesPerView: 4 },
           }}
         >
-          {featuredProducts.map((product) => (
+          {products.map((product) => (
             <SwiperSlide key={product.id}>
               <Card
                 onClick={() => router.push(`/products/${product.id}`)}
@@ -101,7 +161,7 @@ const router = useRouter();
                   my: 2,
                   borderRadius: 3,
                   transition: "0.3s",
-                  "&:hover": { transform: "translateY(-8px)", boxShadow: 6}
+                  "&:hover": { transform: "translateY(-8px)", boxShadow: 6 }
                 }}
               >
                 <CardMedia
@@ -164,8 +224,8 @@ const router = useRouter();
         </Typography>
 
         <Grid container spacing={3}>
-          {categories.map((category) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}key={category.id}>
+          {categorie.map((category) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={category.id}>
               <Card
                 onClick={() => router.push("/products")}
                 sx={{
@@ -185,7 +245,7 @@ const router = useRouter();
                 <CardMedia
                   component="img"
                   className="category-image"
-                  src={category.img}
+                  src={category.image}
                   alt={category.name}
                   sx={{
                     height: 150,
@@ -217,7 +277,7 @@ const router = useRouter();
         </Typography>
 
         <Grid container spacing={3}>
-          {bestSelling.map((product) => (
+          {bestSellingProducts.map((product) => (
             <Grid size={{ xs: 12, sm: 6, md: 3 }} key={product.id}>
               <Card
                 onClick={() => router.push(`/products/${product.id}`)}
@@ -239,7 +299,7 @@ const router = useRouter();
                   />
                 </Box>
 
-                <Box
+                {/* <Box
                   sx={{
                     position: "absolute",
                     top: 10,
@@ -252,7 +312,7 @@ const router = useRouter();
                   }}
                 >
                   -{product.discount}%
-                </Box>
+                </Box> */}
 
                 <CardContent>
                   <Typography fontWeight="bold">
