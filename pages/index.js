@@ -27,8 +27,9 @@ export default function Home() {
   const [categorie, setCategorie] = useState([]);
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
-console.log(products,"all products")
-const bestSellingProducts = products.filter(product => product.is_best_selling);
+
+  const bestSellingProducts = products.filter(product => product.is_best_selling);
+  const featuredProducts = products.filter(product => product.is_featured);
   useEffect(() => {
     const fetchBanners = async () => {
       const { data, error } = await supabase
@@ -99,16 +100,16 @@ const bestSellingProducts = products.filter(product => product.is_best_selling);
 
 
   const router = useRouter();
- if (loading) {
-  return (
-    <Container sx={{ py: 10, textAlign: "center" }}>
-      <CircularProgress />
-      <Typography variant="h6" sx={{ mt: 2 }}>
-        Loading product...
-      </Typography>
-    </Container>
-  );
-}
+  if (loading) {
+    return (
+      <Container sx={{ py: 10, textAlign: "center" }}>
+        <CircularProgress />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Loading product...
+        </Typography>
+      </Container>
+    );
+  }
   return (
     <Box sx={{ pt: 2 }}>
       <Container maxWidth="lg">
@@ -153,7 +154,7 @@ const bestSellingProducts = products.filter(product => product.is_best_selling);
             1200: { slidesPerView: 4 },
           }}
         >
-          {products.map((product) => (
+          {featuredProducts.map((product) => (
             <SwiperSlide key={product.id}>
               <Card
                 onClick={() => router.push(`/products/${product.id}`)}
@@ -161,20 +162,33 @@ const bestSellingProducts = products.filter(product => product.is_best_selling);
                   my: 2,
                   borderRadius: 3,
                   transition: "0.3s",
+                  height: 300, // fixed height
+                  display: "flex",
+                  flexDirection: "column",
                   "&:hover": { transform: "translateY(-8px)", boxShadow: 6 }
                 }}
               >
+                {/* Image */}
                 <CardMedia
                   component="img"
-                  height="180"
                   image={product.image}
                   alt={product.name}
+                  sx={{
+                    height: 180, // fix image height
+                    objectFit: "cover", // image cover, maintain aspect ratio
+                    borderTopLeftRadius: 12,
+                    borderTopRightRadius: 12
+                  }}
                 />
-                <CardContent>
-                  <Typography fontWeight="bold">
+
+                {/* Content */}
+                <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <Typography fontWeight="bold" noWrap>
                     {product.name}
                   </Typography>
-                  <Typography color="error">৳ {product.price}</Typography>
+                  <Typography color="error" fontWeight="bold">
+                    ৳ {product.price}
+                  </Typography>
                 </CardContent>
               </Card>
             </SwiperSlide>
