@@ -340,7 +340,7 @@ export default function Home() {
                       sx={{ textDecoration: "line-through" }}
                       color="text.secondary"
                     >
-                      ৳ {product.oldPrice}
+                      ৳ {product.old_price}
                     </Typography>
                   </Stack>
                 </CardContent>
