@@ -1,12 +1,27 @@
-import React, { useState } from 'react';
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, CssBaseline, AppBar, IconButton } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import supabase from '@/lib/createClient';
+import {
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Toolbar,
+  Typography,
+  CssBaseline,
+  AppBar,
+  IconButton,
+  Button,
+} from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import PeopleIcon from '@mui/icons-material/People';
 import MenuIcon from '@mui/icons-material/Menu';
-import { useRouter } from 'next/router';
-
+import CircularProgress from '@mui/material/CircularProgress';
 
 const drawerWidth = 240;
 
@@ -17,16 +32,43 @@ const navItems = [
   { text: 'Customers', icon: <PeopleIcon />, href: '/admin/customers' },
   { text: 'Categories', icon: <ShoppingBagIcon />, href: '/admin/categories' },
   { text: 'Banners', icon: <ShoppingBagIcon />, href: '/admin/banners' },
-
 ];
 
 const AdminLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/admin/login'); // redirect to login page if not logged in
+      } else {
+        setLoading(false);
+      }
+    };
+
+    checkUser();
+
+    // Listen for auth changes (optional, for real-time session updates)
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) router.push('/admin/login');
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
   const drawer = (
     <div>
@@ -74,13 +116,19 @@ const AdminLayout = ({ children }) => {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Dashboard
           </Typography>
-          {/* <UserButton afterSignOutUrl="/" /> */}
+          <Button
+            color="inherit"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              router.push('/admin/login');
+            }}
+          >
+            Sign Out
+          </Button>
         </Toolbar>
       </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-      >
+
+      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -93,6 +141,7 @@ const AdminLayout = ({ children }) => {
         >
           {drawer}
         </Drawer>
+
         <Drawer
           variant="permanent"
           sx={{
@@ -104,6 +153,7 @@ const AdminLayout = ({ children }) => {
           {drawer}
         </Drawer>
       </Box>
+
       <Box
         component="main"
         sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
