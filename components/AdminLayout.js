@@ -44,7 +44,7 @@ const AdminLayout = ({ children }) => {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
-        router.push('/admin/login'); // redirect to login page if not logged in
+        router.push('/auth'); // redirect to login page if not logged in
       } else {
         setLoading(false);
       }
@@ -54,7 +54,7 @@ const AdminLayout = ({ children }) => {
 
     // Listen for auth changes (optional, for real-time session updates)
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) router.push('/admin/login');
+      if (!session) router.push('/admin');
     });
 
     return () => listener.subscription.unsubscribe();
@@ -120,7 +120,7 @@ const AdminLayout = ({ children }) => {
             color="inherit"
             onClick={async () => {
               await supabase.auth.signOut();
-              router.push('/admin/login');
+              router.push('/auth');
             }}
           >
             Sign Out
