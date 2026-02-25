@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import supabase from '@/lib/createClient';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import supabase from "@/lib/createClient";
 import {
   Box,
   Drawer,
@@ -15,23 +15,29 @@ import {
   AppBar,
   IconButton,
   Button,
-} from '@mui/material';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
-import PeopleIcon from '@mui/icons-material/People';
-import MenuIcon from '@mui/icons-material/Menu';
-import CircularProgress from '@mui/material/CircularProgress';
+} from "@mui/material";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
+import PeopleIcon from "@mui/icons-material/People";
+import MenuIcon from "@mui/icons-material/Menu";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const drawerWidth = 240;
 
 const navItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, href: '/admin' },
-  { text: 'Add Product', icon: <AddCircleOutlineIcon />, href: '/admin/add-product' },
-  { text: 'Orders', icon: <ShoppingBagIcon />, href: '/admin/orders' },
-  { text: 'Customers', icon: <PeopleIcon />, href: '/admin/customers' },
-  { text: 'Categories', icon: <ShoppingBagIcon />, href: '/admin/categories' },
-  { text: 'Banners', icon: <ShoppingBagIcon />, href: '/admin/banners' },
+  { text: "Dashboard", icon: <DashboardIcon />, href: "/admin" },
+
+  // { text: 'Customers', icon: <PeopleIcon />, href: '/admin/customers' },
+
+  { text: "Banners", icon: <ShoppingBagIcon />, href: "/admin/banners" },
+  { text: "Categories", icon: <ShoppingBagIcon />, href: "/admin/categories" },
+  {
+    text: "Add Product",
+    icon: <AddCircleOutlineIcon />,
+    href: "/admin/add-product",
+  },
+  { text: "Orders", icon: <ShoppingBagIcon />, href: "/admin/orders" },
 ];
 
 const AdminLayout = ({ children }) => {
@@ -41,10 +47,12 @@ const AdminLayout = ({ children }) => {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       if (!session) {
-        router.push('/auth'); // redirect to login page if not logged in
+        router.push("/auth"); // redirect to login page if not logged in
       } else {
         setLoading(false);
       }
@@ -53,16 +61,23 @@ const AdminLayout = ({ children }) => {
     checkUser();
 
     // Listen for auth changes (optional, for real-time session updates)
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) router.push('/admin');
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!session) router.push("/admin");
+      },
+    );
 
     return () => listener.subscription.unsubscribe();
   }, [router]);
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="100vh"
+      >
         <CircularProgress />
       </Box>
     );
@@ -94,7 +109,7 @@ const AdminLayout = ({ children }) => {
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       <CssBaseline />
       <AppBar
         position="fixed"
@@ -109,7 +124,7 @@ const AdminLayout = ({ children }) => {
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={{ mr: 2, display: { sm: "none" } }}
           >
             <MenuIcon />
           </IconButton>
@@ -120,7 +135,7 @@ const AdminLayout = ({ children }) => {
             color="inherit"
             onClick={async () => {
               await supabase.auth.signOut();
-              router.push('/auth');
+              router.push("/auth");
             }}
           >
             Sign Out
@@ -128,15 +143,21 @@ const AdminLayout = ({ children }) => {
         </Toolbar>
       </AppBar>
 
-      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
+      <Box
+        component="nav"
+        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+      >
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{ keepMounted: true }}
           sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            display: { xs: "block", sm: "none" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+            },
           }}
         >
           {drawer}
@@ -145,8 +166,11 @@ const AdminLayout = ({ children }) => {
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            display: { xs: "none", sm: "block" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+            },
           }}
           open
         >
@@ -156,7 +180,11 @@ const AdminLayout = ({ children }) => {
 
       <Box
         component="main"
-        sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+        }}
       >
         <Toolbar />
         {children}
