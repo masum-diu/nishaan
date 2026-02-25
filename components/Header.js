@@ -14,6 +14,8 @@ import {
   ListItemText,
   Toolbar,
   Typography,
+  Stack,
+  Divider,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -59,44 +61,102 @@ const Header = () => {
     router.push('/');
   };
 
-  const drawer = (
-    <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
-      <Typography
-        variant="h6"
-        sx={{
-          my: 2,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          justifyContent: 'center',
-          fontWeight: 'bold',
-          color: '#2A6498',
-        }}
-      >
-        Nishaan <VerifiedIcon />
-      </Typography>
-      <List>
-        {navItems.map((item) => (
-          <ListItem key={item.label} disablePadding>
-            <ListItemButton sx={{ textAlign: 'center' }} component={Link} href={item.href}>
-              <ListItemText primary={item.label} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-        <ListItem disablePadding>
-          {user ? (
-            <ListItemButton sx={{ textAlign: 'center' }} onClick={handleLogout}>
-              <ListItemText primary="Logout" />
-            </ListItemButton>
-          ) : (
-            <ListItemButton sx={{ textAlign: 'center' }} component={Link} href="/auth">
-              <ListItemText primary="Login / Register" />
-            </ListItemButton>
-          )}
+const drawer = (
+  <Box sx={{ textAlign: "center", height: "100%" }}>
+    
+    {/* Logo */}
+    <Typography
+      variant="h6"
+      sx={{
+        my: 3,
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        justifyContent: "center",
+        fontWeight: "bold",
+        color: "#2A6498",
+      }}
+    >
+      Nishaan <VerifiedIcon fontSize="small" />
+    </Typography>
+
+    <Divider />
+
+    {/* Navigation */}
+    <List sx={{ mt: 1 }}>
+      {navItems.map((item) => (
+        <ListItem key={item.label} disablePadding>
+          <ListItemButton
+            component={Link}
+            href={item.href}
+            sx={{
+              textAlign: "center",
+              py: 1.5,
+              "&:hover": { backgroundColor: "#f5f5f5" },
+            }}
+          >
+            <ListItemText primary={item.label} />
+          </ListItemButton>
         </ListItem>
-      </List>
+      ))}
+    </List>
+
+    <Divider sx={{ my: 2 }} />
+
+    {/* User Section */}
+    <Box px={2}>
+      {user ? (
+        <Stack spacing={2} alignItems="center">
+          
+          {/* Profile Button */}
+          <Button
+            fullWidth
+            variant="contained"
+            startIcon={<AccountCircleIcon />}
+            component={Link}
+            href="/profile"
+            sx={{ borderRadius: 2 }}
+          >
+            {user.email.split("@")[0]}
+          </Button>
+
+          {/* Optional Admin Link */}
+          {user?.role === "admin" && (
+            <Button
+              fullWidth
+              variant="outlined"
+              component={Link}
+              href="/admin"
+            >
+              Admin Dashboard
+            </Button>
+          )}
+
+          {/* Logout */}
+          <Button
+            fullWidth
+            variant="outlined"
+            color="error"
+            onClick={handleLogout}
+            sx={{ borderRadius: 2 }}
+          >
+            Logout
+          </Button>
+        </Stack>
+      ) : (
+        <Button
+          fullWidth
+          variant="contained"
+          component={Link}
+          href="/auth"
+          sx={{ borderRadius: 2 }}
+        >
+          Login / Register
+        </Button>
+      )}
     </Box>
-  );
+  </Box>
+);
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -132,6 +192,11 @@ const Header = () => {
             >
               Nishaan <VerifiedIcon color="#2A6498" />
             </Typography>
+            <IconButton component={Link} href="/cart" sx={{ mr: 1, color: 'var(--text-color)' ,display: { xs: 'block', md: 'none' } }}>
+                <Badge badgeContent={cartCount} color="error">
+                  <ShoppingCartIcon />
+                </Badge>
+              </IconButton>
 
             <Box sx={{ display: { xs: 'none', md: 'block' } }}>
               {navItems.map((item) => (
