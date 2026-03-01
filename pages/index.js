@@ -23,93 +23,99 @@ import { useRouter } from "next/router";
 import supabase from "@/lib/createClient";
 
 export default function Home() {
-  const [products, setProducts] = useState([]);
-  const [categorie, setCategorie] = useState([]);
+ const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const bestSellingProducts = products.filter(product => product.is_best_selling);
-  const featuredProducts = products.filter(product => product.is_featured);
+  // ================= HELPER FUNCTIONS =================
+
+  const getLowestPrice = (product) => {
+    if (!product.product_variants?.length) return 0;
+    return Math.min(
+      ...product.product_variants.map((v) => Number(v.price))
+    );
+  };
+
+  const getOldPrice = (product) => {
+    if (!product.product_variants?.length) return 0;
+    return Math.max(
+      ...product.product_variants.map((v) => Number(v.old_price || 0))
+    );
+  };
+
+  const getMainImage = (product) => {
+    if (!product.product_variants?.length) return "/no-image.png";
+
+    const variantWithImage = product.product_variants.find(
+      (v) => v.product_images?.length
+    );
+
+    if (!variantWithImage) return "/no-image.png";
+
+    return variantWithImage.product_images[0].image_url;
+  };
+
+  const featuredProducts = products.filter((p) => p.is_featured);
+  const bestSellingProducts = products.filter((p) => p.is_best_selling);
+const router = useRouter();
+  // ================= FETCH DATA =================
+
   useEffect(() => {
-    const fetchBanners = async () => {
-      const { data, error } = await supabase
-        .from("banners")
-        .select("*")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
+    const fetchAll = async () => {
+      setLoading(true);
 
-      if (error) {
-        console.log(error);
-      } else {
-        setBanners(data);
-      }
-    };
-    const fetchProducts = async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select("*")
-        .order("created_at", { ascending: false });
+      const [productsRes, bannersRes, categoriesRes] =
+        await Promise.all([
+          supabase
+            .from("products")
+            .select(`
+              *,
+              product_variants (
+                id,
+                price,
+                old_price,
+                stock,
+                product_images ( image_url )
+              )
+            `)
+            .order("created_at", { ascending: false }),
 
-      if (error) {
-        console.log("Error:", error.message);
-      } else {
-        setProducts(data);
-      }
+          supabase
+            .from("banners")
+            .select("*")
+            .eq("is_active", true)
+            .order("created_at", { ascending: false }),
 
-      setLoading(false);
-    };
-    const fetchCategories = async () => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select("*")
-        .order("created_at", { ascending: false });
+          supabase
+            .from("categories")
+            .select("*")
+            .order("created_at", { ascending: false }),
+        ]);
 
-      if (error) {
-        console.log("Error:", error.message);
-      } else {
-        setCategorie(data);
-      }
+      if (!productsRes.error) setProducts(productsRes.data);
+      if (!bannersRes.error) setBanners(bannersRes.data);
+      if (!categoriesRes.error) setCategories(categoriesRes.data);
 
       setLoading(false);
     };
 
-    fetchProducts();
-    fetchBanners();
-    fetchCategories();
+    fetchAll();
   }, []);
-  // useEffect(() => {
-  //   const fetchProducts = async () => {
-  //     const { data, error } = await supabase
-  //       .from('banners')
-  //       .select("*")
-  //       .order("created_at", { ascending: false });
 
-  //     if (error) {
-  //       console.log("Error:", error.message);
-  //     } else {
-  //       setProducts(data);
-  //     }
+  // ================= LOADING =================
 
-  //     setLoading(false);
-  //   };
-
-  //   fetchProducts();
-  // }, []);
-
-
-
-
-  const router = useRouter();
   if (loading) {
     return (
       <Container sx={{ py: 10, textAlign: "center" }}>
         <CircularProgress />
         <Typography variant="h6" sx={{ mt: 2 }}>
-          Loading product...
+          Loading...
         </Typography>
       </Container>
     );
   }
+
   return (
     <Box sx={{ pt: 2 }}>
       <Container maxWidth="lg">
@@ -159,36 +165,40 @@ export default function Home() {
               <Card
                 onClick={() => router.push(`/products/${product.id}`)}
                 sx={{
-                  my: 2,
                   borderRadius: 3,
+                  cursor: "pointer",
                   transition: "0.3s",
-                  height: 300, // fixed height
-                  display: "flex",
-                  flexDirection: "column",
-                  "&:hover": { transform: "translateY(-8px)", boxShadow: 6 }
+                  "&:hover": { transform: "translateY(-6px)", boxShadow: 6 },
+                  mb: 1,
                 }}
               >
-                {/* Image */}
                 <CardMedia
                   component="img"
-                  image={product.image}
+                  height="220"
+                  image={getMainImage(product)}
                   alt={product.name}
-                  sx={{
-                    height: 180, // fix image height
-                    objectFit: "cover", // image cover, maintain aspect ratio
-                    borderTopLeftRadius: 12,
-                    borderTopRightRadius: 12
-                  }}
+                  sx={{ objectFit: "cover" }}
                 />
 
-                {/* Content */}
-                <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <CardContent>
                   <Typography fontWeight="bold" noWrap>
                     {product.name}
                   </Typography>
-                  <Typography color="error" fontWeight="bold">
-                    ৳ {product.price}
-                  </Typography>
+
+                  <Stack direction="row" spacing={1}>
+                    <Typography color="error" fontWeight="bold">
+                      ৳ {getLowestPrice(product)}
+                    </Typography>
+
+                    {getOldPrice(product) > 0 && (
+                      <Typography
+                        sx={{ textDecoration: "line-through" }}
+                        color="text.secondary"
+                      >
+                        ৳ {getOldPrice(product)}
+                      </Typography>
+                    )}
+                  </Stack>
                 </CardContent>
               </Card>
             </SwiperSlide>
@@ -238,47 +248,38 @@ export default function Home() {
         </Typography>
 
         <Grid container spacing={3}>
-          {categorie.map((category) => (
+          {categories.map((category) => (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={category.id}>
               <Card
-                onClick={() => router.push("/products")}
+                onClick={() => router.push(`/products`)}
                 sx={{
-                  position: "relative",
                   borderRadius: 3,
                   overflow: "hidden",
+                  cursor: "pointer",
                   transition: "0.3s",
-                  "&:hover": {
-                    transform: "scale(1.05)",
-                    boxShadow: 6,
-                  },
-                  "&:hover .category-image": {
-                    transform: "scale(1.1)",
-                  },
+                  "&:hover": { transform: "scale(1.05)", boxShadow: 6 },
                 }}
               >
                 <CardMedia
                   component="img"
-                  className="category-image"
-                  src={category.image}
+                  height="150"
+                  image={category.image}
                   alt={category.name}
-                  sx={{
-                    height: 150,
-                    transition: "transform 0.4s ease-in-out",
-                  }}
                 />
                 <Box
                   sx={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
+                    // position: "absolute",
+                    // bottom: 0,
                     width: "100%",
-                    bgcolor: "rgba(0, 0, 0, 0.6)",
-                    color: "#ffff",
+                    bgcolor: "rgb(7, 7, 7)",
+                    color: "#fff",
                     p: 1,
                     textAlign: "center",
                   }}
                 >
-                  <Typography fontWeight="bold" variant="subtitle1">{category.name}</Typography>
+                  <Typography fontWeight="bold">
+                    {category.name}
+                  </Typography>
                 </Box>
               </Card>
             </Grid>
@@ -296,52 +297,38 @@ export default function Home() {
               <Card
                 onClick={() => router.push(`/products/${product.id}`)}
                 sx={{
-                  borderRadius: 4,
-                  overflow: "hidden",
-                  position: "relative",
+                  borderRadius: 3,
+                  cursor: "pointer",
                   transition: "0.3s",
-                  "&:hover img": { transform: "scale(1.1)" },
+                  "&:hover": { transform: "translateY(-6px)", boxShadow: 6 },
                 }}
               >
-                <Box sx={{ overflow: "hidden" }}>
-                  <CardMedia
-                    component="img"
-                    height="220"
-                    image={product.image}
-                    alt={product.name}
-                    sx={{ transition: "0.4s" }}
-                  />
-                </Box>
-
-                {/* <Box
-                  sx={{
-                    position: "absolute",
-                    top: 10,
-                    left: 10,
-                    bgcolor: "error.main",
-                    color: "#fff",
-                    px: 1,
-                    borderRadius: 1,
-                    fontSize: 12,
-                  }}
-                >
-                  -{product.discount}%
-                </Box> */}
+                <CardMedia
+                  component="img"
+                  height="220"
+                  image={getMainImage(product)}
+                  alt={product.name}
+                  sx={{ objectFit: "cover" }}
+                />
 
                 <CardContent>
-                  <Typography fontWeight="bold">
+                  <Typography fontWeight="bold" noWrap>
                     {product.name}
                   </Typography>
+
                   <Stack direction="row" spacing={1}>
                     <Typography color="error" fontWeight="bold">
-                      ৳ {product.price}
+                      ৳ {getLowestPrice(product)}
                     </Typography>
-                    <Typography
-                      sx={{ textDecoration: "line-through" }}
-                      color="text.secondary"
-                    >
-                      ৳ {product.old_price}
-                    </Typography>
+
+                    {getOldPrice(product) > 0 && (
+                      <Typography
+                        sx={{ textDecoration: "line-through" }}
+                        color="text.secondary"
+                      >
+                        ৳ {getOldPrice(product)}
+                      </Typography>
+                    )}
                   </Stack>
                 </CardContent>
               </Card>

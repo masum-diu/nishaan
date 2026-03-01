@@ -35,7 +35,7 @@ const navItems = [
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
-  const { cartCount } = useCart();
+  const { cartItems } = useCart();
   const router = useRouter();
 
   const handleDrawerToggle = () => {
@@ -193,7 +193,7 @@ const drawer = (
               Nishaan <VerifiedIcon color="#2A6498" />
             </Typography>
             <IconButton component={Link} href="/cart" sx={{ mr: 1, color: 'var(--text-color)' ,display: { xs: 'block', md: 'none' } }}>
-                <Badge badgeContent={cartCount} color="error">
+                <Badge badgeContent={cartItems.length} color="error">
                   <ShoppingCartIcon />
                 </Badge>
               </IconButton>
@@ -213,7 +213,7 @@ const drawer = (
 
             <Box sx={{ display: { xs: 'none', sm: 'block' }, ml: 2 }}>
               <IconButton component={Link} href="/cart" sx={{ mr: 1, color: 'var(--text-color)' }}>
-                <Badge badgeContent={cartCount} color="error">
+                <Badge badgeContent={cartItems.length} color="error">
                   <ShoppingCartIcon />
                 </Badge>
               </IconButton>

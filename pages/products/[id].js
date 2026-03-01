@@ -1,241 +1,231 @@
-
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import {
-  Box,
-  Container,
-  Grid,
-  Typography,
-  Button,
-  Stack,
-  Chip,
-  Divider,
-  IconButton,
-  CircularProgress,
+  Box, Container, Grid, Typography, Button, Stack,
+  Chip, Divider, IconButton, CircularProgress
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
+
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Thumbs } from "swiper/modules";
+
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/thumbs";
+
 import { useCart } from "../../lib/CartContext";
 import supabase from "@/lib/createClient";
-
-// In a real app, you'd fetch this from an API based on the ID
-const dummyProducts = [
-  {
-    id: 1,
-    name: "Model Code 483 – Running Sneaker",
-    price: 1950,
-    oldPrice: 2890,
-    inStock: true,
-    sizes: [40, 41, 42, 43, 44],
-    image: "/assets/sun.webp",
-    description:
-      "A fantastic pair of running sneakers designed for comfort and performance. Made with breathable materials and a durable sole, these shoes are perfect for your daily run or a casual walk in the park.",
-  },
-  {
-    id: 2,
-    name: "Model Code 482 – Running Sneaker",
-    price: 2100,
-    oldPrice: 2800,
-    inStock: true,
-    sizes: [39, 40, 41],
-    image: "/assets/sun.webp",
-    description:
-      "Stylish and modern, these sneakers offer a blend of fashion and function. The lightweight construction ensures you can wear them all day without discomfort.",
-  },
-  {
-    id: 3,
-    name: "Model Code 481 – Running Sneaker",
-    price: 1750,
-    oldPrice: 2500,
-    inStock: false,
-    sizes: [42, 43, 44],
-    image: "/assets/sun.webp",
-    description:
-      "Get the best deal on these high-quality sneakers. Limited stock available. Features a unique design that stands out from the crowd.",
-  },
-  {
-    id: 4,
-    name: "Model Code 480 – Running Sneaker",
-    price: 1999,
-    oldPrice: 2999,
-    inStock: true,
-    sizes: [40, 41, 42],
-    image: "/assets/sun.webp",
-    description:
-      "The latest model in our collection. Experience superior cushioning and support with our advanced sole technology. Perfect for serious athletes.",
-  },
-];
 
 export default function ProductDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { addToCart } = useCart();
-  const [quantity, setQuantity] = useState(1);
-  const [selectedSize, setSelectedSize] = useState(null);
-  const [error, setError] = useState("");
-  const [products, setProducts] = useState([]);
+
+  const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [thumbsSwiper, setThumbsSwiper] = useState(null);
+  const [quantity, setQuantity] = useState(1);
 
-  // Find the product from the dummy data.
-  // In a real app, you would fetch this data using the `id`.
-  const product = products.find((p) => p.id === id);
-  console.log(products, "products lists")
- useEffect(() => {
-    const fetchProducts = async () => {
+  // 🔥 Fetch Product + Variants + Images
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchProduct = async () => {
       const { data, error } = await supabase
-        .from('products')
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from("products")
+        .select(`
+          *,
+          product_variants (
+            id,
+            size,
+            price,
+            old_price,
+            stock,
+            product_images (
+              image_url
+            )
+          )
+        `)
+        .eq("id", id)
+        .maybeSingle();
 
-      if (error) {
-        console.log("Error:", error.message);
-      } else {
-        setProducts(data);
+      if (!error && data) {
+        setProduct(data);
+        if (data.product_variants?.length) {
+          setSelectedVariant(data.product_variants[0]);
+        }
       }
 
       setLoading(false);
     };
 
-    fetchProducts();
-  }, []);
-  // Set a default size when the product loads
-  useEffect(() => {
-    if (product && product.sizes.length > 0) {
-      setSelectedSize(product.sizes[0]);
-    }
-  }, [product]);
+    fetchProduct();
+  }, [id]);
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
-      setError("Please select a size.");
-      return;
-    }
-    setError("");
-     addToCart({ ...product, quantity, size: selectedSize });
-    // Optionally, show a success message/toast
-    // alert(`${product.name} (Size: ${selectedSize}) added to cart!`);
+    if (!selectedVariant) return;
+    addToCart({ ...product, variant: selectedVariant, quantity });
   };
 
-  const handleBuyNow = () => {
-    if (!selectedSize) {
-      setError("Please select a size.");
-      return;
-    }
-    addToCart({ ...product, quantity, size: selectedSize });
-    router.push("/checkout");
-  };
-
-  
-  if (loading) {
+  if (loading || !product) {
     return (
       <Container sx={{ py: 10, textAlign: "center" }}>
         <CircularProgress />
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Loading product...
-        </Typography>
       </Container>
     );
   }
+
+  const images = selectedVariant?.product_images || [];
 
   return (
     <Box sx={{ py: 5 }}>
       <Container maxWidth="lg">
         <Grid container spacing={5}>
-          {/* Left Side: Product Image */}
+
+          {/* 🔥 LEFT: SWIPER THUMBS GALLERY */}
           <Grid size={{ xs: 12, md: 6 }}>
-            <Box
-              component="img"
-              src={product.image}
-              alt={product.name}
-              sx={{
-                width: "100%",
-                borderRadius: 4,
-                border: "1px solid #eee",
-              }}
-            />
+
+            {/* Main Slider */}
+            <Swiper
+              modules={[Navigation, Thumbs]}
+              navigation
+              thumbs={{ swiper: thumbsSwiper }}
+              style={{ marginBottom: "10px" }}
+            >
+              {images.length > 0 ? (
+                images.map((img, index) => (
+                  <SwiperSlide key={index}>
+                    <Box
+                      component="img"
+                      src={img.image_url}
+                      alt={product.name}
+                      sx={{
+                        width: "100%",
+                        borderRadius: 3,
+                        border: "1px solid #eee",
+                      }}
+                    />
+                  </SwiperSlide>
+                ))
+              ) : (
+                <SwiperSlide>
+                  <Box
+                    component="img"
+                    src="/no-image.png"
+                    alt="No Image"
+                    sx={{ width: "100%" }}
+                  />
+                </SwiperSlide>
+              )}
+            </Swiper>
+
+            {/* Thumbnail Slider */}
+            <Swiper
+              modules={[Thumbs]}
+              onSwiper={setThumbsSwiper}
+              slidesPerView={4}
+              spaceBetween={10}
+              watchSlidesProgress
+            >
+              {images.map((img, index) => (
+                <SwiperSlide key={index}>
+                  <Box
+                    component="img"
+                    src={img.image_url}
+                    alt="thumb"
+                    sx={{
+                      width: "100%",
+                      borderRadius: 2,
+                      border: "1px solid #ddd",
+                      cursor: "pointer",
+                    }}
+                  />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+
           </Grid>
 
-          {/* Right Side: Product Details */}
+          {/* 🔥 RIGHT SIDE */}
           <Grid size={{ xs: 12, md: 6 }}>
             <Stack spacing={2}>
               <Typography variant="h4" fontWeight="bold">
                 {product.name}
               </Typography>
-
-              {product.stock ? (
-                <Chip label="In Stock" color="success" sx={{ width: "fit-content" }} />
-              ) : (
-                <Chip label="Out of Stock" color="error" sx={{ width: "fit-content" }} />
+              {product.description && (
+                <Typography
+                  color="text.secondary"
+                  sx={{ lineHeight: 1.8 }}
+                >
+                  {product.description}
+                </Typography>
               )}
 
-              <Stack direction="row" alignItems="center" spacing={2}>
-                <Typography variant="h5" color="error" fontWeight="bold">
-                  Tk {product.price}
-                </Typography>
-                <Typography
-                  variant="h6"
-                  color="text.secondary"
-                  sx={{ textDecoration: "line-through" }}
-                >
-                  Tk {product.old_price}
-                </Typography>
-              </Stack>
+              {selectedVariant?.stock > 0 ? (
+                <Chip label="In Stock" color="success" />
+              ) : (
+                <Chip label="Out of Stock" color="error" />
+              )}
 
-              <Typography color="text.secondary">
-                {product.description}
-              </Typography>
+              <Stack direction="row" spacing={2}>
+                <Typography variant="h5" color="error" fontWeight="bold">
+                  Tk {selectedVariant?.price}
+                </Typography>
+
+                {selectedVariant?.old_price > selectedVariant?.price && (
+                  <Typography
+                    sx={{ textDecoration: "line-through" }}
+                    color="text.secondary"
+                  >
+                    Tk {selectedVariant.old_price}
+                  </Typography>
+                )}
+              </Stack>
 
               <Divider />
 
-              {/* Size Selection */}
+              {/* Variant Select */}
               <Typography fontWeight="bold">Select Size:</Typography>
               <Stack direction="row" spacing={1}>
-                {product.sizes.map((size) => (
+                {product.product_variants.map((variant) => (
                   <Button
-                    key={size}
-                    variant={selectedSize === size ? "contained" : "outlined"}
-                    onClick={() => setSelectedSize(size)}
+                    key={variant.id}
+                    variant={
+                      selectedVariant?.id === variant.id
+                        ? "contained"
+                        : "outlined"
+                    }
+                    onClick={() => setSelectedVariant(variant)}
+                    disabled={variant.stock <= 0}
                   >
-                    {size}
+                    {variant.size}
                   </Button>
                 ))}
               </Stack>
 
-              {error && (
-                <Typography color="error" variant="body2" sx={{ mt: 1 }}>
-                  {error}
-                </Typography>
-              )}
-
-              {/* Quantity Selector */}
-              <Typography fontWeight="bold">Quantity:</Typography>
+              {/* Quantity */}
               <Stack direction="row" alignItems="center" spacing={1}>
                 <IconButton
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
                 >
                   <RemoveIcon />
                 </IconButton>
-                <Typography sx={{ border: "1px solid #ccc", px: 2, py: 1, borderRadius: 1 }}>
-                  {quantity}
-                </Typography>
+                <Typography>{quantity}</Typography>
                 <IconButton onClick={() => setQuantity(quantity + 1)}>
                   <AddIcon />
                 </IconButton>
               </Stack>
 
-              <Divider />
-
-              {/* Action Buttons */}
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <Button variant="contained" size="large" fullWidth onClick={handleAddToCart} disabled={!product.stock
-}>
-                  Add to Cart
-                </Button>
-                <Button variant="outlined" size="large" fullWidth onClick={handleBuyNow} disabled={!product.stock}>
-                  Buy Now
-                </Button>
-              </Stack>
+              <Button
+                variant="contained"
+                fullWidth
+                disabled={!selectedVariant?.stock}
+                onClick={handleAddToCart}
+              >
+                Add to Cart
+              </Button>
             </Stack>
           </Grid>
         </Grid>
