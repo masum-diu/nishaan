@@ -81,24 +81,18 @@ export default function AuthPage() {
       } else {
         // REGISTER (Customer only)
         if (roleType === "customer") {
-          const res = await fetch("/api/admin/customer", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email,
-              password,
-              full_name: fullName,
-            }),
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name: fullName, role: "customer" } },
           });
 
-          const result = await res.json();
-          if (!res.ok) throw new Error(result.error);
+          if (error) throw error;
 
-          alert(result.message);
+          alert(
+            "Registration successful! Please check your email for confirmation.",
+          );
           setIsLogin(true);
-        } else {
-          // Admin register blocked
-          throw new Error("Admin registration is not allowed here");
         }
       }
     } catch (err) {
