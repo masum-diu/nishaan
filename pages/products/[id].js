@@ -79,12 +79,23 @@ export default function ProductDetailPage() {
   // Find the product from the dummy data.
   // In a real app, you would fetch this data using the `id`.
   const product = products.find((p) => p.id === id);
-  console.log(products, "products lists")
+  console.log(products, "products lists");
+
+  const getProductStock = (product) => {
+    if (!product) return 0;
+    if (product.stock !== undefined && product.stock !== null) return product.stock;
+    if (Array.isArray(product.product_variants)) {
+      return product.product_variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+    }
+    return 0;
+  };
+
+  const totalStock = getProductStock(product);
  useEffect(() => {
     const fetchProducts = async () => {
       const { data, error } = await supabase
         .from('products')
-        .select("*")
+        .select("*, product_variants(stock,image_url,size_id,color_id)")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -162,7 +173,7 @@ export default function ProductDetailPage() {
                 {product.name}
               </Typography>
 
-              {product.stock ? (
+              {totalStock > 0 ? (
                 <Chip label="In Stock" color="success" sx={{ width: "fit-content" }} />
               ) : (
                 <Chip label="Out of Stock" color="error" sx={{ width: "fit-content" }} />
@@ -228,11 +239,11 @@ export default function ProductDetailPage() {
 
               {/* Action Buttons */}
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <Button variant="contained" size="large" fullWidth onClick={handleAddToCart} disabled={!product.stock
+                <Button variant="contained" size="large" fullWidth onClick={handleAddToCart} disabled={totalStock === 0
 }>
                   Add to Cart
                 </Button>
-                <Button variant="outlined" size="large" fullWidth onClick={handleBuyNow} disabled={!product.stock}>
+                <Button variant="outlined" size="large" fullWidth onClick={handleBuyNow} disabled={totalStock === 0}>
                   Buy Now
                 </Button>
               </Stack>

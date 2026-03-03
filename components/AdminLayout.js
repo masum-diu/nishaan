@@ -31,6 +31,16 @@ const navItems = [
   // { text: 'Customers', icon: <PeopleIcon />, href: '/admin/customers' },
 
   { text: "Banners", icon: <ShoppingBagIcon />, href: "/admin/banners" },
+  {
+    text: "Add Sizes",
+    icon: <AddCircleOutlineIcon />,
+    href: "/admin/sizes",
+  },
+  {
+    text: "Add Color",
+    icon: <AddCircleOutlineIcon />,
+    href: "/admin/color",
+  },
   { text: "Categories", icon: <ShoppingBagIcon />, href: "/admin/categories" },
   { text: "Sub Categories", icon: <ShoppingBagIcon />, href: "/admin/subcatgories" },
   {
@@ -38,6 +48,12 @@ const navItems = [
     icon: <AddCircleOutlineIcon />,
     href: "/admin/add-product",
   },
+  {
+    text: "Add Product Variants",
+    icon: <AddCircleOutlineIcon />,
+    href: "/admin/productVariants",
+  },
+  
   { text: "Orders", icon: <ShoppingBagIcon />, href: "/admin/orders" },
 ];
 

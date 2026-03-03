@@ -27,9 +27,8 @@ export default function Home() {
   const [categorie, setCategorie] = useState([]);
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
+console.log(products,"home")
 
-  const bestSellingProducts = products.filter(product => product.is_best_selling);
-  const featuredProducts = products.filter(product => product.is_featured);
   useEffect(() => {
     const fetchBanners = async () => {
       const { data, error } = await supabase
@@ -44,17 +43,18 @@ export default function Home() {
         setBanners(data);
       }
     };
-    const fetchProducts = async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select("*")
-        .order("created_at", { ascending: false });
+  const fetchProducts = async () => {
+  const { data, error } = await supabase
+  .from('products')
+  .select(`
+    *,
+    product_variants(image_url)
+  `)
+  .order('created_at', { ascending: false });
 
-      if (error) {
-        console.log("Error:", error.message);
-      } else {
-        setProducts(data);
-      }
+  if (error) console.log(error);
+  else setProducts(data);
+
 
       setLoading(false);
     };
@@ -96,7 +96,19 @@ export default function Home() {
   //   fetchProducts();
   // }, []);
 
+const calculateFinalPrice = (product) => {
+  if (!product.discount_type || !product.discount_value) return product.base_price;
 
+  if (product.discount_type === "percentage") {
+    return product.base_price - (product.base_price * product.discount_value / 100);
+  }
+
+  if (product.discount_type === "fixed") {
+    return product.base_price - product.discount_value;
+  }
+
+  return product.base_price;
+};
 
 
   const router = useRouter();
@@ -154,7 +166,7 @@ export default function Home() {
             1200: { slidesPerView: 4 },
           }}
         >
-          {featuredProducts.map((product) => (
+          {products.map((product) => (
             <SwiperSlide key={product.id}>
               <Card
                 onClick={() => router.push(`/products/${product.id}`)}
@@ -171,7 +183,7 @@ export default function Home() {
                 {/* Image */}
                 <CardMedia
                   component="img"
-                  image={product.image}
+                   image={product.product_variants[0]?.image_url || "/placeholder.jpg"}
                   alt={product.name}
                   sx={{
                     height: 180, // fix image height
@@ -187,7 +199,7 @@ export default function Home() {
                     {product.name}
                   </Typography>
                   <Typography color="error" fontWeight="bold">
-                    ৳ {product.price}
+                    ৳ {calculateFinalPrice(product)}
                   </Typography>
                 </CardContent>
               </Card>
@@ -290,59 +302,43 @@ export default function Home() {
           Best Selling Products
         </Typography>
 
-        <Grid container spacing={3}>
-          {bestSellingProducts.map((product) => (
+        <Grid container spacing={2}>
+          {products.map((product) => (
             <Grid size={{ xs: 12, sm: 6, md: 3 }} key={product.id}>
               <Card
                 onClick={() => router.push(`/products/${product.id}`)}
                 sx={{
-                  borderRadius: 4,
-                  overflow: "hidden",
-                  position: "relative",
+                  my: 2,
+                  borderRadius: 3,
                   transition: "0.3s",
-                  "&:hover img": { transform: "scale(1.1)" },
+                  height: 300, // fixed height
+                  display: "flex",
+                  flexDirection: "column",
+                  "&:hover": { transform: "translateY(-8px)", boxShadow: 6 }
                 }}
               >
-                <Box sx={{ overflow: "hidden" }}>
-                  <CardMedia
-                    component="img"
-                    height="220"
-                    image={product.image}
-                    alt={product.name}
-                    sx={{ transition: "0.4s" }}
-                  />
-                </Box>
-
-                {/* <Box
+                {/* Image */}
+                <CardMedia
+                  component="img"
+                   image={product.product_variants[0]?.image_url || "/placeholder.jpg"}
+                  alt={product.name}
                   sx={{
-                    position: "absolute",
-                    top: 10,
-                    left: 10,
-                    bgcolor: "error.main",
-                    color: "#fff",
-                    px: 1,
-                    borderRadius: 1,
-                    fontSize: 12,
+                    height: 180, // fix image height
+                    objectFit: "cover", // image cover, maintain aspect ratio
+                    borderTopLeftRadius: 12,
+                    borderTopRightRadius: 12
                   }}
-                >
-                  -{product.discount}%
-                </Box> */}
+                />
 
-                <CardContent>
-                  <Typography fontWeight="bold">
+                {/* Content */}
+                <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <Typography fontWeight="bold" noWrap>
                     {product.name}
                   </Typography>
-                  <Stack direction="row" spacing={1}>
-                    <Typography color="error" fontWeight="bold">
-                      ৳ {product.price}
-                    </Typography>
-                    <Typography
-                      sx={{ textDecoration: "line-through" }}
-                      color="text.secondary"
-                    >
-                      ৳ {product.old_price}
-                    </Typography>
-                  </Stack>
+                  <Typography color="error" fontWeight="bold">
+                    ৳ {calculateFinalPrice(product)}
+                  </Typography>
+                  
                 </CardContent>
               </Card>
             </Grid>

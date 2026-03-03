@@ -34,14 +34,26 @@ export default function Subcategories() {
   const [name, setName] = useState('')
   const [categoryId, setCategoryId] = useState('')
 
-  // ---------------- FETCH ----------------
+  // ---------- SLUG GENERATOR ----------
+  const generateSlug = (text) =>
+    text
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+
+  // ---------- FETCH SUBCATEGORIES (JOIN CATEGORY) ----------
   const fetchSubcategories = async () => {
     try {
       setLoading(true)
       const { data, error } = await supabase
         .from('subcategories')
-        .select('*')
+        .select(`
+          *,
+          categories ( name )
+        `)
         .order('created_at', { ascending: false })
+
       if (error) throw error
       setSubcategories(data || [])
     } catch (err) {
@@ -51,11 +63,13 @@ export default function Subcategories() {
     }
   }
 
+  // ---------- FETCH CATEGORIES ----------
   const fetchCategories = async () => {
     const { data, error } = await supabase
       .from('categories')
       .select('id,name')
       .order('name')
+
     if (error) console.log('Fetch Categories Error:', error.message)
     else setCategories(data || [])
   }
@@ -65,7 +79,7 @@ export default function Subcategories() {
     fetchSubcategories()
   }, [])
 
-  // ---------------- MODAL ----------------
+  // ---------- MODAL ----------
   const handleOpen = (subcat = null) => {
     if (subcat) {
       setEditingSubcat(subcat)
@@ -86,31 +100,57 @@ export default function Subcategories() {
     setCategoryId('')
   }
 
-  // ---------------- ADD / UPDATE ----------------
+  // ---------- ADD / UPDATE ----------
   const handleSubmit = async () => {
     if (!name.trim() || !categoryId) return
+
     try {
       setSaving(true)
+      const slug = generateSlug(name)
+
       if (editingSubcat) {
+        // UPDATE
         const { data, error } = await supabase
           .from('subcategories')
-          .update({ name, category_id: categoryId, updated_at: new Date() })
+          .update({
+            name,
+            slug,
+            category_id: categoryId,
+          })
           .eq('id', editingSubcat.id)
-          .select()
+          .select(`
+            *,
+            categories ( name )
+          `)
           .single()
+
         if (error) throw error
+
         setSubcategories(prev =>
           prev.map(sc => (sc.id === editingSubcat.id ? data : sc))
         )
       } else {
+        // INSERT
         const { data, error } = await supabase
           .from('subcategories')
-          .insert([{ name, category_id: categoryId }])
-          .select()
+          .insert([
+            {
+              name,
+              slug,
+              category_id: categoryId,
+            },
+          ])
+          .select(`
+            *,
+            categories ( name )
+          `)
           .single()
+
         if (error) throw error
+
         setSubcategories(prev => [data, ...prev])
       }
+
       handleClose()
     } catch (err) {
       console.log('Save Subcategory Error:', err.message)
@@ -119,15 +159,18 @@ export default function Subcategories() {
     }
   }
 
-  // ---------------- DELETE ----------------
-  const handleDelete = async subcat => {
+  // ---------- DELETE ----------
+  const handleDelete = async (subcat) => {
     if (!confirm('Are you sure?')) return
+
     try {
       const { error } = await supabase
         .from('subcategories')
         .delete()
         .eq('id', subcat.id)
+
       if (error) throw error
+
       setSubcategories(prev => prev.filter(sc => sc.id !== subcat.id))
     } catch (err) {
       console.log('Delete Subcategory Error:', err.message)
@@ -162,9 +205,7 @@ export default function Subcategories() {
             {subcategories.map(sc => (
               <TableRow key={sc.id}>
                 <TableCell>{sc.name}</TableCell>
-                <TableCell>
-                  {categories.find(c => c.id === sc.category_id)?.name || 'N/A'}
-                </TableCell>
+                <TableCell>{sc.categories?.name || 'N/A'}</TableCell>
                 <TableCell>
                   <IconButton onClick={() => handleOpen(sc)}>
                     <EditIcon />
@@ -180,7 +221,10 @@ export default function Subcategories() {
       )}
 
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogTitle>{editingSubcat ? 'Edit Subcategory' : 'Add Subcategory'}</DialogTitle>
+        <DialogTitle>
+          {editingSubcat ? 'Edit Subcategory' : 'Add Subcategory'}
+        </DialogTitle>
+
         <DialogContent>
           <TextField
             label="Subcategory Name"
@@ -189,6 +233,7 @@ export default function Subcategories() {
             value={name}
             onChange={e => setName(e.target.value)}
           />
+
           <TextField
             select
             label="Parent Category"
@@ -204,6 +249,7 @@ export default function Subcategories() {
             ))}
           </TextField>
         </DialogContent>
+
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
           <Button variant="contained" onClick={handleSubmit} disabled={saving}>

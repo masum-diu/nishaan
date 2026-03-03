@@ -25,39 +25,73 @@ export default function ShopPage() {
   // ================= STATE =================
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [categoryId, setCategoryId] = useState("all"); // category filter
+  const [subcategoryId, setSubcategoryId] = useState("all"); // subcategory filter
   const [inStockOnly, setInStockOnly] = useState(false);
   const [selectedSizes, setSelectedSizes] = useState([]);
 
-  // ================= FETCH CATEGORIES =================
+  // ================= FETCH CATEGORIES & SUBCATEGORIES =================
   useEffect(() => {
-    const fetchCategories = async () => {
-      const { data, error } = await supabase
+    const fetchCategoriesAndSubcategories = async () => {
+      // Fetch categories
+      const { data: categoriesData, error: catError } = await supabase
         .from("categories")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.log("Error fetching categories:", error.message);
+      if (catError) {
+        console.log("Error fetching categories:", catError.message);
       } else {
-        setCategories(data);
+        setCategories(categoriesData);
+      }
+
+      // Fetch subcategories
+      const { data: subcatData, error: subcatError } = await supabase
+        .from("subcategories")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (subcatError) {
+        console.log("Error fetching subcategories:", subcatError.message);
+      } else {
+        setSubcategories(subcatData);
       }
     };
 
-    fetchCategories();
+    fetchCategoriesAndSubcategories();
   }, []);
 
   // ================= FETCH PRODUCTS =================
   useEffect(() => {
     const fetchProducts = async () => {
-      let query = supabase.from("products").select("*").order("created_at", {
+      let query = supabase.from("products")
+      // include variant stock and image for display/filtering
+      .select("*, product_variants(stock,image_url)")
+      .order("created_at", {
         ascending: false,
       });
 
-      if (categoryId !== "all") {
-        query = query.eq("category_id", categoryId); // category filter
+      if (subcategoryId !== "all") {
+        // If a specific subcategory is selected, filter by it
+        query = query.eq("subcategory_id", subcategoryId);
+      } else if (categoryId !== "all") {
+        // If only category is selected, get subcategory IDs for this category and filter
+        const relevantSubcats = subcategories.filter(
+          (subcat) => subcat.category_id === categoryId
+        );
+        const subcatIds = relevantSubcats.map((s) => s.id);
+        
+        if (subcatIds.length > 0) {
+          query = query.in("subcategory_id", subcatIds);
+        } else {
+          // If category has no subcategories, return empty
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
       }
 
       const { data, error } = await query;
@@ -72,7 +106,20 @@ export default function ShopPage() {
     };
 
     fetchProducts();
+  }, [categoryId, subcategoryId, subcategories]);
+
+  // ================= RESET SUBCATEGORY WHEN CATEGORY CHANGES =================
+  useEffect(() => {
+    setSubcategoryId("all");
   }, [categoryId]);
+
+  // ================= FILTER SUBCATEGORIES BY SELECTED CATEGORY =================
+  const filteredSubcategories = useMemo(() => {
+    if (categoryId === "all") {
+      return [];
+    }
+    return subcategories.filter((subcat) => subcat.category_id === categoryId);
+  }, [subcategories, categoryId]);
 
   // ================= HANDLERS =================
   const handleInStockChange = () => setInStockOnly(!inStockOnly);
@@ -83,10 +130,25 @@ export default function ShopPage() {
     );
   };
 
+  // helper to compute total available stock (sum of variants)
+  const getProductStock = (product) => {
+    if (product.stock !== undefined && product.stock !== null) {
+      return product.stock;
+    }
+    if (Array.isArray(product.product_variants)) {
+      return product.product_variants.reduce(
+        (sum, v) => sum + (v.stock || 0),
+        0
+      );
+    }
+    return 0;
+  };
+
   // ================= FILTER LOGIC =================
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
-      const matchStock = !inStockOnly || product.stock > 0;
+      const stockCount = getProductStock(product);
+      const matchStock = !inStockOnly || stockCount > 0;
 
       const matchSize =
         !product.sizes ||
@@ -97,6 +159,20 @@ export default function ShopPage() {
     });
   }, [products, inStockOnly, selectedSizes]);
 
+
+  const calculateFinalPrice = (product) => {
+  if (!product.discount_type || !product.discount_value) return product.base_price;
+
+  if (product.discount_type === "percentage") {
+    return product.base_price - (product.base_price * product.discount_value / 100);
+  }
+
+  if (product.discount_type === "fixed") {
+    return product.base_price - product.discount_value;
+  }
+
+  return product.base_price;
+};
   if (loading) {
     return (
       <Box
@@ -144,6 +220,31 @@ export default function ShopPage() {
 
               <Divider sx={{ my: 3 }} />
 
+              {/* Subcategories (Show only when category is selected) */}
+              {categoryId !== "all" && (
+                <>
+                  <Typography fontWeight="bold" mb={2}>
+                    Subcategories
+                  </Typography>
+                  <RadioGroup
+                    value={subcategoryId}
+                    onChange={(e) => setSubcategoryId(e.target.value)}
+                  >
+                    <FormControlLabel value="all" control={<Radio />} label="All" />
+                    {filteredSubcategories.map((subcat) => (
+                      <FormControlLabel
+                        key={subcat.id}
+                        value={subcat.id}
+                        control={<Radio />}
+                        label={subcat.name}
+                      />
+                    ))}
+                  </RadioGroup>
+
+                  <Divider sx={{ my: 3 }} />
+                </>
+              )}
+
               {/* Availability */}
               <Typography fontWeight="bold" mb={2}>
                 Availability
@@ -155,26 +256,7 @@ export default function ShopPage() {
                 label="In Stock Only"
               />
 
-              <Divider sx={{ my: 3 }} />
-
-              {/* Sizes */}
-              <Typography fontWeight="bold" mb={2}>
-                Size
-              </Typography>
-              <Stack spacing={1}>
-                {[39, 40, 41, 42, 43, 44, 45,46].map((size) => (
-                  <FormControlLabel
-                    key={size}
-                    control={
-                      <Checkbox
-                        checked={selectedSizes.includes(size)}
-                        onChange={() => handleSizeChange(size)}
-                      />
-                    }
-                    label={size}
-                  />
-                ))}
-              </Stack>
+             
             </Box>
           </Grid>
 
@@ -209,7 +291,9 @@ export default function ShopPage() {
                     <CardMedia
                       component="img"
                       height="220"
-                      image={product.image}
+                      image={
+                        product.product_variants?.[0]?.image_url || product.image || "/placeholder.jpg"
+                      }
                       alt={product.name}
                     />
 
@@ -221,20 +305,27 @@ export default function ShopPage() {
                       </Typography>
                       <Stack direction="row" spacing={1}>
                         <Typography color="error" fontWeight="bold">
-                          Tk {product.price}
+                          Tk {calculateFinalPrice(product)}
                         </Typography>
                         <Typography
                           sx={{ textDecoration: "line-through" }}
                           color="text.secondary"
                         >
-                          Tk {product.old_price}
+                          Tk {product.base_price}
                         </Typography>
                       </Stack>
-                      {!product.stock && (
-                        <Typography color="error" mt={1}>
-                          Out of Stock
-                        </Typography>
-                      )}
+                      {(() => {
+                        const count = getProductStock(product);
+                        return (
+                          <Typography
+                            color={count > 0 ? "success.main" : "error"}
+                            mt={1}
+                            fontSize="0.85rem"
+                          >
+                            {count > 0 ? `${count} in stock` : "Out of Stock"}
+                          </Typography>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 </Grid>
