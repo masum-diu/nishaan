@@ -72,8 +72,10 @@ export default function ProductDetailPage() {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedVariant, setSelectedVariant] = useState(null);
   const [error, setError] = useState("");
   const [products, setProducts] = useState([]);
+  const [sizes, setSizes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Find the product from the dummy data.
@@ -91,7 +93,36 @@ export default function ProductDetailPage() {
   };
 
   const totalStock = getProductStock(product);
- useEffect(() => {
+
+  // derive available sizes from variants
+  const variantSizes = React.useMemo(() => {
+    if (!product || !Array.isArray(product.product_variants)) return [];
+    // return objects with id & name
+    const uniqueIds = [...new Set(product.product_variants.map((v) => v.size_id))];
+    return uniqueIds.map((id) => ({
+      id,
+      name: sizes.find((s) => s.id === id)?.name || id,
+    }));
+  }, [product, sizes]);
+
+  // determine selected variant when size changes
+  React.useEffect(() => {
+    if (selectedSize && product?.product_variants) {
+      const v = product.product_variants.find(
+        (x) => x.size_id === selectedSize
+      );
+      setSelectedVariant(v || null);
+    }
+  }, [selectedSize, product]);
+
+  // automatically pick first size/variant
+  React.useEffect(() => {
+    if (variantSizes.length > 0) {
+      setSelectedSize(variantSizes[0]);
+    }
+  }, [variantSizes]);
+
+  useEffect(() => {
     const fetchProducts = async () => {
       const { data, error } = await supabase
         .from('products')
@@ -107,14 +138,17 @@ export default function ProductDetailPage() {
       setLoading(false);
     };
 
+    const fetchSizes = async () => {
+      const { data, error } = await supabase.from('sizes').select('id,name');
+      if (!error) setSizes(data || []);
+    };
+
     fetchProducts();
+    fetchSizes();
+    // Optionally, show a success message/toast
+    // alert(`${product.name} (Size: ${selectedSize}) added to cart!`);
   }, []);
-  // Set a default size when the product loads
-  useEffect(() => {
-    if (product && product.sizes.length > 0) {
-      setSelectedSize(product.sizes[0]);
-    }
-  }, [product]);
+
 
   const handleAddToCart = () => {
     if (!selectedSize) {
@@ -122,9 +156,12 @@ export default function ProductDetailPage() {
       return;
     }
     setError("");
-     addToCart({ ...product, quantity, size: selectedSize });
-    // Optionally, show a success message/toast
-    // alert(`${product.name} (Size: ${selectedSize}) added to cart!`);
+    addToCart({
+      ...product,
+      quantity,
+      size: selectedSize,
+      variant: selectedVariant,
+    });
   };
 
   const handleBuyNow = () => {
@@ -132,7 +169,12 @@ export default function ProductDetailPage() {
       setError("Please select a size.");
       return;
     }
-    addToCart({ ...product, quantity, size: selectedSize });
+    addToCart({
+      ...product,
+      quantity,
+      size: selectedSize,
+      variant: selectedVariant,
+    });
     router.push("/checkout");
   };
 
@@ -156,7 +198,11 @@ export default function ProductDetailPage() {
           <Grid size={{ xs: 12, md: 6 }}>
             <Box
               component="img"
-              src={product.image}
+              src={
+                selectedVariant?.image_url ||
+                product.image ||
+                "/placeholder.jpg"
+              }
               alt={product.name}
               sx={{
                 width: "100%",
@@ -173,7 +219,13 @@ export default function ProductDetailPage() {
                 {product.name}
               </Typography>
 
-              {totalStock > 0 ? (
+              {selectedVariant ? (
+                selectedVariant.stock > 0 ? (
+                  <Chip label="In Stock" color="success" sx={{ width: "fit-content" }} />
+                ) : (
+                  <Chip label="Out of Stock" color="error" sx={{ width: "fit-content" }} />
+                )
+              ) : totalStock > 0 ? (
                 <Chip label="In Stock" color="success" sx={{ width: "fit-content" }} />
               ) : (
                 <Chip label="Out of Stock" color="error" sx={{ width: "fit-content" }} />
@@ -198,16 +250,16 @@ export default function ProductDetailPage() {
 
               <Divider />
 
-              {/* Size Selection */}
+              {/* Size Selection (from variants) */}
               <Typography fontWeight="bold">Select Size:</Typography>
               <Stack direction="row" spacing={1}>
-                {product.sizes.map((size) => (
+                {variantSizes.map((sz) => (
                   <Button
-                    key={size}
-                    variant={selectedSize === size ? "contained" : "outlined"}
-                    onClick={() => setSelectedSize(size)}
+                    key={sz.id}
+                    variant={selectedSize === sz.id ? "contained" : "outlined"}
+                    onClick={() => setSelectedSize(sz.id)}
                   >
-                    {size}
+                    {sz.name}
                   </Button>
                 ))}
               </Stack>
@@ -239,11 +291,14 @@ export default function ProductDetailPage() {
 
               {/* Action Buttons */}
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <Button variant="contained" size="large" fullWidth onClick={handleAddToCart} disabled={totalStock === 0
+                <Button variant="contained" size="large" fullWidth onClick={handleAddToCart} disabled={
+                  selectedVariant ? selectedVariant.stock === 0 : totalStock === 0
 }>
                   Add to Cart
                 </Button>
-                <Button variant="outlined" size="large" fullWidth onClick={handleBuyNow} disabled={totalStock === 0}>
+                <Button variant="outlined" size="large" fullWidth onClick={handleBuyNow} disabled={
+                  selectedVariant ? selectedVariant.stock === 0 : totalStock === 0
+                }>
                   Buy Now
                 </Button>
               </Stack>
