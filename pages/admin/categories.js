@@ -1,6 +1,6 @@
-
 import AdminLayout from "@/components/AdminLayout";
 import supabase from "@/lib/createClient";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   CircularProgress,
@@ -21,9 +21,16 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import React, { useEffect, useState } from "react";
 
-function CategoriesPage() {
+// ---------------- Helper ----------------
+const generateSlug = (text) =>
+  text
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9\-]/g, "");
+
+export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,22 +38,18 @@ function CategoriesPage() {
   const [open, setOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [name, setName] = useState("");
-
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  // ================= FETCH =================
+  // ---------------- FETCH ----------------
   const fetchCategories = async () => {
     try {
       setLoading(true);
-
       const { data, error } = await supabase
         .from("categories")
         .select("*")
         .order("created_at", { ascending: false });
-
       if (error) throw error;
-
       setCategories(data || []);
     } catch (err) {
       console.log("Fetch Error:", err.message);
@@ -59,7 +62,7 @@ function CategoriesPage() {
     fetchCategories();
   }, []);
 
-  // ================= OPEN =================
+  // ---------------- MODAL HANDLERS ----------------
   const handleOpen = (category = null) => {
     if (category) {
       setEditingCategory(category);
@@ -82,23 +85,21 @@ function CategoriesPage() {
     setPreview(null);
   };
 
-  // ================= ADD / UPDATE =================
+  // ---------------- ADD / UPDATE ----------------
   const handleSubmit = async () => {
     if (!name.trim()) return;
 
     try {
       setSaving(true);
-
+      const slug = generateSlug(name);
       let imageUrl = editingCategory?.image || null;
 
-      // ===== IMAGE UPLOAD =====
+      // Upload image if selected
       if (imageFile) {
         const fileName = `categories/${Date.now()}-${imageFile.name}`;
-
         const { error: uploadError } = await supabase.storage
           .from("categories")
           .upload(fileName, imageFile);
-
         if (uploadError) throw uploadError;
 
         const { data } = supabase.storage
@@ -109,29 +110,26 @@ function CategoriesPage() {
       }
 
       if (editingCategory) {
-        // UPDATE
         const { data, error } = await supabase
           .from("categories")
-          .update({ name, image: imageUrl })
+          .update({ name, slug, image: imageUrl, updated_at: new Date() })
           .eq("id", editingCategory.id)
           .select()
-          .single();
+          .single(); // ✅ data is now a single object
 
         if (error) throw error;
 
+        // ✅ update the state
         setCategories((prev) =>
-          prev.map((cat) =>
-            cat.id === editingCategory.id ? data : cat
-          )
+          prev.map((cat) => (cat.id === editingCategory.id ? data : cat)),
         );
       } else {
         // INSERT
         const { data, error } = await supabase
           .from("categories")
-          .insert([{ name, image: imageUrl }])
+          .insert([{ name, slug, image: imageUrl }])
           .select()
           .single();
-
         if (error) throw error;
 
         setCategories((prev) => [data, ...prev]);
@@ -145,7 +143,7 @@ function CategoriesPage() {
     }
   };
 
-  // ================= DELETE =================
+  // ---------------- DELETE ----------------
   const handleDelete = async (cat) => {
     if (!confirm("Are you sure?")) return;
 
@@ -153,24 +151,18 @@ function CategoriesPage() {
       // Delete from storage
       if (cat.image) {
         const path = cat.image.split(
-          "/storage/v1/object/public/categories/"
+          "/storage/v1/object/public/categories/",
         )[1];
-
-        await supabase.storage
-          .from("categories")
-          .remove([path]);
+        await supabase.storage.from("categories").remove([path]);
       }
 
       const { error } = await supabase
         .from("categories")
         .delete()
         .eq("id", cat.id);
-
       if (error) throw error;
 
-      setCategories((prev) =>
-        prev.filter((item) => item.id !== cat.id)
-      );
+      setCategories((prev) => prev.filter((item) => item.id !== cat.id));
     } catch (err) {
       console.log("Delete Error:", err.message);
     }
@@ -187,13 +179,11 @@ function CategoriesPage() {
         <Typography variant="h4" fontWeight="bold">
           Categories
         </Typography>
-
         <Button variant="contained" onClick={() => handleOpen()}>
           Add Category
         </Button>
       </Stack>
 
-      {/* ================= TABLE ================= */}
       {loading ? (
         <Box display="flex" justifyContent="center" minHeight={200}>
           <CircularProgress />
@@ -227,10 +217,7 @@ function CategoriesPage() {
                   <IconButton onClick={() => handleOpen(cat)}>
                     <EditIcon />
                   </IconButton>
-                  <IconButton
-                    color="error"
-                    onClick={() => handleDelete(cat)}
-                  >
+                  <IconButton color="error" onClick={() => handleDelete(cat)}>
                     <DeleteIcon />
                   </IconButton>
                 </TableCell>
@@ -240,7 +227,6 @@ function CategoriesPage() {
         </Table>
       )}
 
-      {/* ================= MODAL ================= */}
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
         <DialogTitle>
           {editingCategory ? "Edit Category" : "Add Category"}
@@ -253,7 +239,6 @@ function CategoriesPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-
           <input
             type="file"
             accept="image/*"
@@ -266,7 +251,6 @@ function CategoriesPage() {
               }
             }}
           />
-
           {preview && (
             <Box mt={2}>
               <img
@@ -282,24 +266,13 @@ function CategoriesPage() {
             </Box>
           )}
         </DialogContent>
-
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={saving}
-          >
-            {saving
-              ? "Saving..."
-              : editingCategory
-              ? "Update"
-              : "Add"}
+          <Button variant="contained" onClick={handleSubmit} disabled={saving}>
+            {saving ? "Saving..." : editingCategory ? "Update" : "Add"}
           </Button>
         </DialogActions>
       </Dialog>
     </AdminLayout>
   );
 }
-
-export default CategoriesPage;

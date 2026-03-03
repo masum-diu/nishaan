@@ -27,10 +27,7 @@ export default function AuthPage() {
   // Auto redirect if already logged in
   useEffect(() => {
     const checkUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
+      const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
         const { data: profile } = await supabase
           .from("profiles")
@@ -40,12 +37,10 @@ export default function AuthPage() {
 
         if (!profile?.role) return;
 
-        // Role-based redirect
         if (profile.role === "admin") router.push("/admin");
         else if (profile.role === "customer") router.push("/");
       }
     };
-
     checkUser();
   }, [router]);
 
@@ -56,47 +51,53 @@ export default function AuthPage() {
     try {
       if (isLogin) {
         // LOGIN
-        const { data, error: loginError } =
-          await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
+        const { data, error: loginError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
         if (loginError) throw loginError;
+        if (!data.user) throw new Error("Login failed");
 
-        const { data: profile } = await supabase
+        // Fetch profile
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("role")
           .eq("id", data.user.id)
           .single();
 
-        if (profile?.role !== roleType) {
+        if (profileError || !profile?.role) {
+          await supabase.auth.signOut();
+          throw new Error("Profile not found. Please register first.");
+        }
+
+        // Role validation
+        if (profile.role !== roleType) {
           await supabase.auth.signOut();
           throw new Error(`You are not authorized as ${roleType}`);
         }
 
-        // Role-based redirect
+        // Redirect based on role
         if (profile.role === "admin") router.push("/admin");
         else if (profile.role === "customer") router.push("/");
       } else {
         // REGISTER (Customer only)
-        if (roleType === "customer") {
-          const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: { data: { full_name: fullName, role: "customer" } },
-          });
+        if (roleType !== "customer") throw new Error("Only customers can register here");
 
-          if (error) throw error;
+        const { data: user, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: fullName, role: "customer" } },
+        });
 
-          alert(
-            "Registration successful! Please check your email for confirmation.",
-          );
-          setIsLogin(true);
-        }
+        if (signUpError) throw signUpError;
+        if (!user) throw new Error("Signup failed");
+
+        alert("Registration successful! Please check your email for confirmation.");
+        setIsLogin(true);
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -104,14 +105,7 @@ export default function AuthPage() {
 
   return (
     <Container maxWidth="sm">
-      <Box
-        display="flex"
-        flexDirection="column"
-        justifyContent="center"
-        alignItems="center"
-        mt={5}
-        px={2}
-      >
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" mt={5} px={2}>
         <Typography variant="h4" mb={3}>
           {isLogin
             ? `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Login`
@@ -164,23 +158,10 @@ export default function AuthPage() {
           </Typography>
         )}
 
-        <Button
-          variant="contained"
-          onClick={handleSubmit}
-          sx={{ mt: 2 }}
-          disabled={loading}
-          fullWidth
-        >
-          {loading ? (
-            <CircularProgress size={20} />
-          ) : isLogin ? (
-            "Login"
-          ) : (
-            "Register"
-          )}
+        <Button variant="contained" onClick={handleSubmit} sx={{ mt: 2 }} disabled={loading} fullWidth>
+          {loading ? <CircularProgress size={20} /> : isLogin ? "Login" : "Register"}
         </Button>
 
-        {/* Customer register/login toggle */}
         <Typography mt={2}>
           {roleType === "customer" && (
             <>

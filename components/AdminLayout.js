@@ -32,6 +32,7 @@ const navItems = [
 
   { text: "Banners", icon: <ShoppingBagIcon />, href: "/admin/banners" },
   { text: "Categories", icon: <ShoppingBagIcon />, href: "/admin/categories" },
+  { text: "Sub Categories", icon: <ShoppingBagIcon />, href: "/admin/subcatgories" },
   {
     text: "Add Product",
     icon: <AddCircleOutlineIcon />,
