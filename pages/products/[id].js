@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import {
   Box,
@@ -15,177 +14,183 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Thumbs } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/thumbs";
+
 import { useCart } from "../../lib/CartContext";
 import supabase from "@/lib/createClient";
-
-// In a real app, you'd fetch this from an API based on the ID
-const dummyProducts = [
-  {
-    id: 1,
-    name: "Model Code 483 – Running Sneaker",
-    price: 1950,
-    oldPrice: 2890,
-    inStock: true,
-    sizes: [40, 41, 42, 43, 44],
-    image: "/assets/sun.webp",
-    description:
-      "A fantastic pair of running sneakers designed for comfort and performance. Made with breathable materials and a durable sole, these shoes are perfect for your daily run or a casual walk in the park.",
-  },
-  {
-    id: 2,
-    name: "Model Code 482 – Running Sneaker",
-    price: 2100,
-    oldPrice: 2800,
-    inStock: true,
-    sizes: [39, 40, 41],
-    image: "/assets/sun.webp",
-    description:
-      "Stylish and modern, these sneakers offer a blend of fashion and function. The lightweight construction ensures you can wear them all day without discomfort.",
-  },
-  {
-    id: 3,
-    name: "Model Code 481 – Running Sneaker",
-    price: 1750,
-    oldPrice: 2500,
-    inStock: false,
-    sizes: [42, 43, 44],
-    image: "/assets/sun.webp",
-    description:
-      "Get the best deal on these high-quality sneakers. Limited stock available. Features a unique design that stands out from the crowd.",
-  },
-  {
-    id: 4,
-    name: "Model Code 480 – Running Sneaker",
-    price: 1999,
-    oldPrice: 2999,
-    inStock: true,
-    sizes: [40, 41, 42],
-    image: "/assets/sun.webp",
-    description:
-      "The latest model in our collection. Experience superior cushioning and support with our advanced sole technology. Perfect for serious athletes.",
-  },
-];
 
 export default function ProductDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { addToCart } = useCart();
+
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const [thumbsSwiper, setThumbsSwiper] = useState(null);
+
   const [error, setError] = useState("");
-  const [products, setProducts] = useState([]);
+  const [product, setProduct] = useState(null);
   const [sizes, setSizes] = useState([]);
+  const [colors, setColors] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Find the product from the dummy data.
-  // In a real app, you would fetch this data using the `id`.
-  const product = products.find((p) => p.id === id);
-  console.log(products, "products lists");
-
-  const getProductStock = (product) => {
-    if (!product) return 0;
-    if (product.stock !== undefined && product.stock !== null) return product.stock;
-    if (Array.isArray(product.product_variants)) {
-      return product.product_variants.reduce((sum, v) => sum + (v.stock || 0), 0);
-    }
-    return 0;
-  };
-
-  const totalStock = getProductStock(product);
-
-  // derive available sizes from variants
-  const variantSizes = React.useMemo(() => {
-    if (!product || !Array.isArray(product.product_variants)) return [];
-    // return objects with id & name
-    const uniqueIds = [...new Set(product.product_variants.map((v) => v.size_id))];
-    return uniqueIds.map((id) => ({
-      id,
-      name: sizes.find((s) => s.id === id)?.name || id,
-    }));
-  }, [product, sizes]);
-
-  // determine selected variant when size changes
-  React.useEffect(() => {
-    if (selectedSize && product?.product_variants) {
-      const v = product.product_variants.find(
-        (x) => x.size_id === selectedSize
-      );
-      setSelectedVariant(v || null);
-    }
-  }, [selectedSize, product]);
-
-  // automatically pick first size/variant
-  React.useEffect(() => {
-    if (variantSizes.length > 0) {
-      setSelectedSize(variantSizes[0]);
-    }
-  }, [variantSizes]);
-
+  // ================= FETCH DATA =================
   useEffect(() => {
-    const fetchProducts = async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select("*, product_variants(stock,image_url,size_id,color_id)")
-        .order("created_at", { ascending: false });
+    if (!id) return;
 
-      if (error) {
-        console.log("Error:", error.message);
+    const fetchData = async () => {
+      setLoading(true);
+
+      // fetch product with variants
+      const { data: productData, error: productError } = await supabase
+        .from("products")
+        .select(
+          "*, product_variants(id,stock,image_url,size_ids,color_id)"
+        )
+        .eq("id", id)
+        .single();
+
+      if (productError) {
+        console.log(productError.message);
       } else {
-        setProducts(data);
+        setProduct(productData);
       }
 
+      // fetch sizes
+      const { data: sizeData } = await supabase
+        .from("sizes")
+        .select("id,name");
+
+      // fetch colors
+      const { data: colorData } = await supabase
+        .from("colors")
+        .select("id,name,hex_code");
+
+      setSizes(sizeData || []);
+      setColors(colorData || []);
       setLoading(false);
     };
 
-    const fetchSizes = async () => {
-      const { data, error } = await supabase.from('sizes').select('id,name');
-      if (!error) setSizes(data || []);
-    };
+    fetchData();
+  }, [id]);
 
-    fetchProducts();
-    fetchSizes();
-    // Optionally, show a success message/toast
-    // alert(`${product.name} (Size: ${selectedSize}) added to cart!`);
-  }, []);
+  // ================= VARIANT SIZES =================
+  const variantSizes = useMemo(() => {
+    if (!product?.product_variants) return [];
+    const allSizeIds = product.product_variants.flatMap(
+      (v) => v.size_ids || []
+    );
+    const uniqueSizeIds = [...new Set(allSizeIds)];
+    return uniqueSizeIds.map((sid) => ({
+      id: sid,
+      name: sizes.find((s) => s.id === sid)?.name || sid,
+    }));
+  }, [product, sizes]);
 
+  useEffect(() => {
+    if (variantSizes.length > 0) {
+      setSelectedSize(variantSizes[0].id);
+    }
+  }, [variantSizes]);
 
+  // ================= VARIANT COLORS =================
+  const variantColors = useMemo(() => {
+    if (!product?.product_variants) return [];
+    const filteredVariants = product.product_variants.filter(
+      (v) => selectedSize ? v.size_ids?.includes(selectedSize) : true
+    );
+    const uniqueColorIds = [
+      ...new Set(filteredVariants.map((v) => v.color_id).filter(Boolean))
+    ];
+    return uniqueColorIds.map((cid) => ({
+      id: cid,
+      name: colors.find((c) => c.id === cid)?.name || "Unknown",
+      hex: colors.find((c) => c.id === cid)?.hex_code || "#000000",
+    }));
+  }, [product, selectedSize, colors]);
+
+  useEffect(() => {
+    if (variantColors.length > 0 && !selectedColor) {
+      setSelectedColor(variantColors[0].id);
+    }
+  }, [variantColors]);
+
+  // ================= SELECT VARIANT =================
+  useEffect(() => {
+    if (product?.product_variants && selectedSize && selectedColor) {
+      const variant = product.product_variants.find(
+        (v) =>
+          v.size_ids?.includes(selectedSize) &&
+          v.color_id === selectedColor
+      );
+      setSelectedVariant(variant || null);
+    }
+  }, [selectedSize, selectedColor, product]);
+
+  // ================= PRODUCT IMAGES =================
+  const productImages = useMemo(() => {
+    if (!product?.product_variants) return [product?.image || "/placeholder.jpg"];
+    const allImages = [...new Set(product.product_variants.map(v => v.image_url).filter(Boolean))];
+    if (selectedVariant?.image_url) {
+      return [
+        selectedVariant.image_url,
+        ...allImages.filter(img => img !== selectedVariant.image_url)
+      ];
+    }
+    return allImages;
+  }, [product, selectedVariant]);
+
+  // ================= STOCK =================
+  const totalStock = selectedVariant ? selectedVariant.stock : product?.product_variants?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;
+
+  // ================= ACTIONS =================
   const handleAddToCart = () => {
-    if (!selectedSize) {
-      setError("Please select a size.");
+    if (!selectedSize || !selectedColor) {
+      setError("Please select a size and color.");
       return;
     }
-    setError("");
     addToCart({
       ...product,
       quantity,
       size: selectedSize,
+      color: selectedColor,
       variant: selectedVariant,
     });
+    setError("");
   };
 
   const handleBuyNow = () => {
-    if (!selectedSize) {
-      setError("Please select a size.");
+    if (!selectedSize || !selectedColor) {
+      setError("Please select a size and color.");
       return;
     }
     addToCart({
       ...product,
       quantity,
       size: selectedSize,
+      color: selectedColor,
       variant: selectedVariant,
     });
     router.push("/checkout");
   };
 
-  
-  if (loading) {
+  const calculateFinalPrice = (product) => {
+    if (!product.discount_type || !product.discount_value) return product.base_price;
+    if (product.discount_type === "percentage") return product.base_price - (product.base_price * product.discount_value / 100);
+    if (product.discount_type === "fixed") return product.base_price - product.discount_value;
+    return product.base_price;
+  };
+
+  if (loading || !product) {
     return (
       <Container sx={{ py: 10, textAlign: "center" }}>
         <CircularProgress />
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Loading product...
-        </Typography>
+        <Typography sx={{ mt: 2 }}>Loading product...</Typography>
       </Container>
     );
   }
@@ -194,66 +199,75 @@ export default function ProductDetailPage() {
     <Box sx={{ py: 5 }}>
       <Container maxWidth="lg">
         <Grid container spacing={5}>
-          {/* Left Side: Product Image */}
+          {/* IMAGE */}
           <Grid size={{ xs: 12, md: 6 }}>
-            <Box
-              component="img"
-              src={
-                selectedVariant?.image_url ||
-                product.image ||
-                "/placeholder.jpg"
-              }
-              alt={product.name}
-              sx={{
-                width: "100%",
-                borderRadius: 4,
-                border: "1px solid #eee",
-              }}
-            />
+            <Box>
+              <Swiper
+                modules={[Thumbs]}
+                thumbs={{ swiper: thumbsSwiper }}
+                spaceBetween={10}
+                style={{ borderRadius: 16 }}
+              >
+                {productImages.map((img, idx) => (
+                  <SwiperSlide key={idx}>
+                    <Box
+                      component="img"
+                      src={img}
+                      alt="Product Image"
+                      sx={{ width: "100%", borderRadius: 4, border: "1px solid #eee" }}
+                    />
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+              <Swiper
+                onSwiper={setThumbsSwiper}
+                spaceBetween={10}
+                slidesPerView={4}
+                watchSlidesProgress
+                style={{ marginTop: 16 }}
+              >
+                {productImages.map((img, idx) => (
+                  <SwiperSlide key={idx}>
+                    <Box
+                      component="img"
+                      src={img}
+                      alt="Thumb"
+                      sx={{ width: "100%", height: 80, objectFit: "cover", borderRadius: 2, border: "1px solid #ddd", cursor: "pointer" }}
+                    />
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </Box>
           </Grid>
 
-          {/* Right Side: Product Details */}
+          {/* DETAILS */}
           <Grid size={{ xs: 12, md: 6 }}>
             <Stack spacing={2}>
-              <Typography variant="h4" fontWeight="bold">
-                {product.name}
-              </Typography>
+              <Typography variant="h4" fontWeight="bold">{product.name}</Typography>
 
-              {selectedVariant ? (
-                selectedVariant.stock > 0 ? (
-                  <Chip label="In Stock" color="success" sx={{ width: "fit-content" }} />
-                ) : (
-                  <Chip label="Out of Stock" color="error" sx={{ width: "fit-content" }} />
-                )
-              ) : totalStock > 0 ? (
-                <Chip label="In Stock" color="success" sx={{ width: "fit-content" }} />
+              {selectedVariant?.stock > 0 ? (
+                <Chip label="In Stock" color="success" />
               ) : (
-                <Chip label="Out of Stock" color="error" sx={{ width: "fit-content" }} />
+                <Chip label="Out of Stock" color="error" />
               )}
 
-              <Stack direction="row" alignItems="center" spacing={2}>
+              <Stack direction="row" spacing={2}>
                 <Typography variant="h5" color="error" fontWeight="bold">
-                  Tk {product.price}
+                  Tk {calculateFinalPrice(product)}
                 </Typography>
-                <Typography
-                  variant="h6"
-                  color="text.secondary"
-                  sx={{ textDecoration: "line-through" }}
-                >
-                  Tk {product.old_price}
-                </Typography>
+                {product.base_price && (
+                  <Typography variant="h6" color="text.secondary" sx={{ textDecoration: "line-through" }}>
+                    Tk {product.base_price}
+                  </Typography>
+                )}
               </Stack>
 
-              <Typography color="text.secondary">
-                {product.description}
-              </Typography>
-
+              <Typography color="text.secondary">{product.description}</Typography>
               <Divider />
 
-              {/* Size Selection (from variants) */}
               <Typography fontWeight="bold">Select Size:</Typography>
               <Stack direction="row" spacing={1}>
-                {variantSizes.map((sz) => (
+                {variantSizes.map(sz => (
                   <Button
                     key={sz.id}
                     variant={selectedSize === sz.id ? "contained" : "outlined"}
@@ -264,41 +278,46 @@ export default function ProductDetailPage() {
                 ))}
               </Stack>
 
-              {error && (
-                <Typography color="error" variant="body2" sx={{ mt: 1 }}>
-                  {error}
-                </Typography>
-              )}
+              <Typography fontWeight="bold">Select Color:</Typography>
+              <Stack direction="row" spacing={1}>
+                {variantColors.map(c => (
+                  <Button
+                    key={c.id}
+                    variant={selectedColor === c.id ? "contained" : "outlined"}
+                    sx={{ backgroundColor: c.hex, color: "#fff", minWidth: 40 }}
+                    onClick={() => setSelectedColor(c.id)}
+                  >
+                    {selectedColor === c.id ? "✓" : ""}
+                  </Button>
+                ))}
+              </Stack>
 
-              {/* Quantity Selector */}
+              {error && <Typography color="error">{error}</Typography>}
+
               <Typography fontWeight="bold">Quantity:</Typography>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <IconButton
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
-                >
-                  <RemoveIcon />
-                </IconButton>
-                <Typography sx={{ border: "1px solid #ccc", px: 2, py: 1, borderRadius: 1 }}>
-                  {quantity}
-                </Typography>
-                <IconButton onClick={() => setQuantity(quantity + 1)}>
-                  <AddIcon />
-                </IconButton>
+              <Stack direction="row" alignItems="center">
+                <IconButton onClick={() => setQuantity(Math.max(1, quantity - 1))}><RemoveIcon /></IconButton>
+                <Typography sx={{ px: 2 }}>{quantity}</Typography>
+                <IconButton onClick={() => setQuantity(quantity + 1)}><AddIcon /></IconButton>
               </Stack>
 
               <Divider />
 
-              {/* Action Buttons */}
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <Button variant="contained" size="large" fullWidth onClick={handleAddToCart} disabled={
-                  selectedVariant ? selectedVariant.stock === 0 : totalStock === 0
-}>
+              <Stack direction="row" spacing={2}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  disabled={selectedVariant?.stock === 0}
+                  onClick={handleAddToCart}
+                >
                   Add to Cart
                 </Button>
-                <Button variant="outlined" size="large" fullWidth onClick={handleBuyNow} disabled={
-                  selectedVariant ? selectedVariant.stock === 0 : totalStock === 0
-                }>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  disabled={selectedVariant?.stock === 0}
+                  onClick={handleBuyNow}
+                >
                   Buy Now
                 </Button>
               </Stack>

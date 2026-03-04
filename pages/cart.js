@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
-import { useCart } from '../lib/CartContext'; // Corrected path
+import { useCart } from '../lib/CartContext';
 import {
   Container,
   Typography,
@@ -23,15 +23,15 @@ const CartPage = () => {
   const { cartItems, updateQuantity, removeFromCart } = useCart();
   const [subtotal, setSubtotal] = useState(0);
   const router = useRouter();
-
+console.log(cartItems,"cartdeats")
+  // Calculate subtotal
   useEffect(() => {
-    const newSubtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const newSubtotal = cartItems.reduce(
+      (acc, item) => acc + (item.price || item.base_price || 0) * item.quantity,
+      0
+    );
     setSubtotal(newSubtotal);
   }, [cartItems]);
-
-  // In a real app, shipping might be calculated based on location
-  const shippingFee = subtotal > 0 ? 50 : 0;
-  const total = subtotal + shippingFee;
 
   if (cartItems.length === 0) {
     return (
@@ -50,49 +50,72 @@ const CartPage = () => {
   return (
     <>
       <Head>
-        <title>Shopping Cart - Nishaan</title>
+        <title>Shopping Cart</title>
       </Head>
-      <Box sx={{ py: 5}}>
+      <Box sx={{ py: 5 }}>
         <Container maxWidth="lg">
-          <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+          <Typography variant="h4" fontWeight="bold" gutterBottom>
             Your Shopping Cart
           </Typography>
           <Grid container spacing={4}>
             {/* Cart Items */}
-            <Grid size={{ xs: 12, md: 8 }}>
+            <Grid item xs={12} md={8}>
               <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
                 <CardContent>
                   <Stack spacing={3} divider={<Divider />}>
                     {cartItems.map((item) => (
-                      <Stack direction="row" key={`${item.id}-${item.size}`} spacing={2} alignItems="center">
+                      <Stack
+                        direction="row"
+                        key={`${item.id}-${item.size}-${item.color || ''}`}
+                        spacing={2}
+                        alignItems="center"
+                      >
                         <CardMedia
                           component="img"
-                          image={item.image}
+                          image={item.image || '/placeholder.jpg'}
                           alt={item.name}
                           sx={{ width: 100, height: 100, borderRadius: 2 }}
                         />
                         <Box flexGrow={1}>
                           <Typography fontWeight="bold">{item.name}</Typography>
+                          {item.size && (
+                            <Typography color="text.secondary" variant="body2">
+                              Size: {item.size}
+                            </Typography>
+                          )}
+                          {item.color && (
+                            <Typography color="text.secondary" variant="body2">
+                              Color: {item.color_name || item.color}
+                            </Typography>
+                          )}
                           <Typography color="text.secondary" variant="body2">
-                            Size: {item.size}
-                          </Typography>
-                          <Typography color="text.secondary" variant="body2">
-                            Price: Tk {item.price.toFixed(2)}
+                            Tk {(item.price || item.base_price || 0).toFixed(2)} each
                           </Typography>
                         </Box>
                         <Stack direction="row" alignItems="center" spacing={1}>
-                          <IconButton size="small" onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)}>
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              updateQuantity(item.id, item.size, Math.max(1, item.quantity - 1))
+                            }
+                          >
                             <RemoveIcon fontSize="small" />
                           </IconButton>
                           <Typography>{item.quantity}</Typography>
-                          <IconButton size="small" onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)}>
+                          <IconButton
+                            size="small"
+                            onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)}
+                          >
                             <AddIcon fontSize="small" />
                           </IconButton>
                         </Stack>
                         <Typography fontWeight="bold" sx={{ width: '100px', textAlign: 'right' }}>
-                          Tk {(item.price * item.quantity).toFixed(2)}
+                          Tk {((item.price || item.base_price || 0) * item.quantity).toFixed(2)}
                         </Typography>
-                        <IconButton onClick={() => removeFromCart(item.id, item.size)} color="error">
+                        <IconButton
+                          onClick={() => removeFromCart(item.id, item.size)}
+                          color="error"
+                        >
                           <DeleteIcon />
                         </IconButton>
                       </Stack>
@@ -103,7 +126,7 @@ const CartPage = () => {
             </Grid>
 
             {/* Order Summary */}
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
                 <CardContent>
                   <Typography variant="h6" fontWeight="bold" mb={2}>
@@ -114,14 +137,14 @@ const CartPage = () => {
                       <Typography color="text.secondary">Subtotal</Typography>
                       <Typography>Tk {subtotal.toFixed(2)}</Typography>
                     </Stack>
-                    <Stack direction="row" justifyContent="space-between">
-                      <Typography color="text.secondary">Shipping Fee</Typography>
-                      <Typography>Tk {shippingFee.toFixed(2)}</Typography>
-                    </Stack>
                     <Divider />
                     <Stack direction="row" justifyContent="space-between">
-                      <Typography fontWeight="bold" variant="h6">Total</Typography>
-                      <Typography fontWeight="bold" variant="h6">Tk {total.toFixed(2)}</Typography>
+                      <Typography fontWeight="bold" variant="h6">
+                        Total
+                      </Typography>
+                      <Typography fontWeight="bold" variant="h6">
+                        Tk {subtotal.toFixed(2)}
+                      </Typography>
                     </Stack>
                   </Stack>
                   <Button
