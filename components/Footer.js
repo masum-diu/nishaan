@@ -16,21 +16,35 @@ const Footer = () => {
         bgcolor: '#585864',
         color: '#fff',
         py: 6,
-        mt: 8,
+        // mt: 8,
       }}
     >
       <Container maxWidth="lg">
         <Grid container spacing={4}>
           {/* Brand Section */}
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
-              Nishaan <VerifiedIcon />
-            </Typography>
+            <Box
+              component="img"
+              src="/assets/logo.png"
+              alt="Nishaan Logo"
+              sx={{
+                height: { xs: 50, md: 100 },
+                width: "auto",
+                cursor: "pointer",
+              }}
+            />
             <Typography variant="body2" sx={{ mb: 2, opacity: 0.8 }}>
               Your one-stop shop for all things amazing. We provide high-quality products with exceptional customer service.
             </Typography>
             <Stack direction="row" spacing={1}>
-              <IconButton aria-label="Facebook" sx={{ color: '#fff' }}>
+              <IconButton
+                component="a"
+                href="https://www.facebook.com/share/1CLxNSKbyn/?mibextid=wwXIfr"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+                sx={{ color: '#fff' }}
+              >
                 <FacebookIcon />
               </IconButton>
               <IconButton aria-label="Twitter" sx={{ color: '#fff' }}>
@@ -72,18 +86,18 @@ const Footer = () => {
           </Grid>
 
           {/* Contact Info */}
-         <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
               Contact Us
             </Typography>
             <Stack spacing={2}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <LocationOnIcon sx={{ fontSize: 20 }} />
-                <Typography variant="body2">123 Street Name, City, Country</Typography>
+                <Typography variant="body2">Bisnopro, kuti, kasba, Brahmanbaria, Bangladesh</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <PhoneIcon sx={{ fontSize: 20 }} />
-                <Typography variant="body2">+1 234 567 890</Typography>
+                <Typography variant="body2">+01700990433</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <EmailIcon sx={{ fontSize: 20 }} />

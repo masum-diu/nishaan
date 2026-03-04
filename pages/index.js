@@ -137,7 +137,7 @@ const calculateFinalPrice = (product) => {
             <SwiperSlide key={banner.id}>
               <Box
                 component="img"
-                src={banner.image}
+                src={banner.image_url}
                 alt={banner.title}
                 onClick={() => router.push("/products")}
                 sx={{
@@ -145,6 +145,7 @@ const calculateFinalPrice = (product) => {
                   height: { xs: 220, md: 420 },
                   objectFit: "cover",
                   borderRadius: 3,
+                 
                 }}
               />
             </SwiperSlide>
@@ -152,7 +153,7 @@ const calculateFinalPrice = (product) => {
         </Swiper>
 
         {/* ================= FEATURED PRODUCTS (Horizontal Style) ================= */}
-        <Typography variant="h5" fontWeight="bold" sx={{ mt: 6, mb: 3 }}>
+        <Typography variant="h5" fontWeight="bold" sx={{ mt: 2, mb: 2 }}>
           Featured Products
         </Typography>
 
@@ -171,7 +172,7 @@ const calculateFinalPrice = (product) => {
               <Card
                 onClick={() => router.push(`/products/${product.id}`)}
                 sx={{
-                  my: 2,
+                  my: 1,
                   borderRadius: 3,
                   transition: "0.3s",
                   height: 300, // fixed height
@@ -210,7 +211,7 @@ const calculateFinalPrice = (product) => {
         {/* ================= PROMO BANNER ================= */}
         <Box
           sx={{
-            mt: 6,
+            mt: 3,
             p: 4,
             borderRadius: 4,
             background:
@@ -245,7 +246,7 @@ const calculateFinalPrice = (product) => {
         </Box>
 
         {/* ================= FEATURED CATEGORIES ================= */}
-        <Typography variant="h5" fontWeight="bold" sx={{ mt: 6, mb: 3 }}>
+        <Typography variant="h5" fontWeight="bold" sx={{ mt: 3, mb: 2 }}>
           Featured Categories
         </Typography>
 
@@ -298,7 +299,7 @@ const calculateFinalPrice = (product) => {
         </Grid>
 
         {/* ================= BEST SELLING PRODUCTS ================= */}
-        <Typography variant="h5" fontWeight="bold" sx={{ mt: 6, mb: 3 }}>
+        <Typography variant="h5" fontWeight="bold" sx={{ mt: 3, mb: 2 }}>
           Best Selling Products
         </Typography>
 

@@ -314,6 +314,7 @@ export default function ProductDetailPage() {
                 </Button>
                 <Button
                   variant="outlined"
+                  color="secondary"
                   fullWidth
                   disabled={selectedVariant?.stock === 0}
                   onClick={handleBuyNow}

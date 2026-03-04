@@ -59,7 +59,7 @@ console.log(cartItems,"cartdeats")
           </Typography>
           <Grid container spacing={4}>
             {/* Cart Items */}
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
                 <CardContent>
                   <Stack spacing={3} divider={<Divider />}>
@@ -126,7 +126,7 @@ console.log(cartItems,"cartdeats")
             </Grid>
 
             {/* Order Summary */}
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
                 <CardContent>
                   <Typography variant="h6" fontWeight="bold" mb={2}>

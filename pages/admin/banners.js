@@ -21,8 +21,7 @@ import {
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 
-
-function Banner() {
+function BannerAdmin() {
   const [banners, setBanners] = useState([]);
   const [open, setOpen] = useState(false);
   const [imageFile, setImageFile] = useState(null);
@@ -30,6 +29,7 @@ function Banner() {
   const [title, setTitle] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Fetch banners
   useEffect(() => {
     fetchBanners();
   }, []);
@@ -39,13 +39,14 @@ function Banner() {
       .from("banners")
       .select("*")
       .order("created_at", { ascending: false });
-
-    if (!error) setBanners(data);
+    if (error) {
+      console.error("Fetch Error:", error.message);
+      return;
+    }
+    setBanners(data || []);
   };
 
-  const handleOpen = () => {
-    setOpen(true);
-  };
+  const handleOpen = () => setOpen(true);
 
   const handleClose = () => {
     setOpen(false);
@@ -54,30 +55,32 @@ function Banner() {
     setTitle("");
   };
 
+  // Upload banner
   const handleSubmit = async () => {
     if (!imageFile) return;
-
     try {
       setSaving(true);
 
+      // Upload to storage
       const fileName = `banner-${Date.now()}`;
-
       const { error: uploadError } = await supabase.storage
         .from("banners")
         .upload(fileName, imageFile);
 
       if (uploadError) throw uploadError;
 
+      // Get public URL
       const { data } = supabase.storage
         .from("banners")
         .getPublicUrl(fileName);
 
       const imageUrl = data.publicUrl;
 
+      // Insert into banners table
       const { error } = await supabase.from("banners").insert([
         {
           title,
-          image: imageUrl,
+          image_url: imageUrl,
           is_active: true,
         },
       ]);
@@ -93,38 +96,55 @@ function Banner() {
     }
   };
 
+  // Delete banner
   const handleDelete = async (banner) => {
-    await supabase.from("banners").delete().eq("id", banner.id);
+    try {
+      await supabase.from("banners").delete().eq("id", banner.id);
 
-    if (banner.image) {
-      const path = banner.image.split("/storage/v1/object/public/banners/")[1];
-      await supabase.storage.from("banners").remove([path]);
+      // Remove from storage
+      if (banner.image_url) {
+        const path = banner.image_url.split(
+          "/storage/v1/object/public/banners/"
+        )[1];
+        await supabase.storage.from("banners").remove([path]);
+      }
+
+      fetchBanners();
+    } catch (err) {
+      console.log("Delete Error:", err.message);
     }
-
-    fetchBanners();
   };
 
+  // Toggle active
   const toggleActive = async (banner) => {
-    await supabase
-      .from("banners")
-      .update({ is_active: !banner.is_active })
-      .eq("id", banner.id);
+    try {
+      await supabase
+        .from("banners")
+        .update({ is_active: !banner.is_active })
+        .eq("id", banner.id);
 
-    fetchBanners();
+      fetchBanners();
+    } catch (err) {
+      console.log("Toggle Error:", err.message);
+    }
   };
 
   return (
     <AdminLayout>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Typography variant="h4" gutterBottom fontWeight="bold">
-        Banner
-      </Typography>
+          Banner Admin
+        </Typography>
 
-      <Button variant="contained" onClick={handleOpen} sx={{ mb: 3 }}>
-        Add Banner
-      </Button>
+        <Button variant="contained" onClick={handleOpen} sx={{ mb: 3 }}>
+          Add Banner
+        </Button>
       </Stack>
-      
 
       <Box display="flex" flexWrap="wrap" gap={2}>
         {banners.map((banner) => (
@@ -132,7 +152,8 @@ function Banner() {
             <CardMedia
               component="img"
               height="150"
-              image={banner.image}
+              image={banner.image_url}
+              alt={banner.title || "Banner"}
             />
             <CardContent>
               <Typography>{banner.title}</Typography>
@@ -159,6 +180,7 @@ function Banner() {
         ))}
       </Box>
 
+      {/* Add Banner Dialog */}
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle>Add Banner</DialogTitle>
         <DialogContent>
@@ -183,11 +205,7 @@ function Banner() {
 
           {preview && (
             <Box mt={2}>
-              <img
-                src={preview}
-                alt="preview"
-                style={{ width: "100%" }}
-              />
+              <img src={preview} alt="preview" style={{ width: "100%" }} />
             </Box>
           )}
         </DialogContent>
@@ -203,4 +221,4 @@ function Banner() {
   );
 }
 
-export default Banner;
+export default BannerAdmin;

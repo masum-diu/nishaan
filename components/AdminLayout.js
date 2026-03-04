@@ -133,9 +133,11 @@ const AdminLayout = ({ children }) => {
         sx={{
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           ml: { sm: `${drawerWidth}px` },
+          
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{height:"110px"}}>
+          
           <IconButton
             color="inherit"
             aria-label="open drawer"

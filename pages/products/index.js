@@ -198,7 +198,7 @@ export default function ShopPage() {
         <Grid container spacing={4}>
           {/* ================= FILTER SIDEBAR ================= */}
           <Grid size={{ xs: 12, md: 3 }}>
-            <Box sx={{ bgcolor: "#fff",  borderRadius: 3 }}>
+            <Box sx={{   borderRadius: 3,color: "#fff"}}>
               {/* Categories (Radio Buttons) */}
               <Typography fontWeight="bold" mb={2}>
                 Categories

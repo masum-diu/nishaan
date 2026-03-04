@@ -61,102 +61,89 @@ const Header = () => {
     router.push('/');
   };
 
-const drawer = (
-  <Box sx={{ textAlign: "center", height: "100%" }}>
-    
-    {/* Logo */}
-    <Typography
-      variant="h6"
-      sx={{
-        my: 3,
-        display: "flex",
-        alignItems: "center",
-        gap: 1,
-        justifyContent: "center",
-        fontWeight: "bold",
-        color: "#2A6498",
-      }}
-    >
-      Nishaan <VerifiedIcon fontSize="small" />
-    </Typography>
+  const drawer = (
+    <Box sx={{ textAlign: "center", height: "100%" }}>
 
-    <Divider />
+      {/* Logo */}
+      <img src="/assets/logo.png" alt="Nishaan Logo" />
 
-    {/* Navigation */}
-    <List sx={{ mt: 1 }}>
-      {navItems.map((item) => (
-        <ListItem key={item.label} disablePadding>
-          <ListItemButton
-            component={Link}
-            href={item.href}
-            sx={{
-              textAlign: "center",
-              py: 1.5,
-              "&:hover": { backgroundColor: "#f5f5f5" },
-            }}
-          >
-            <ListItemText primary={item.label} />
-          </ListItemButton>
-        </ListItem>
-      ))}
-    </List>
+      <Divider />
 
-    <Divider sx={{ my: 2 }} />
+      {/* Navigation */}
+      <List sx={{ mt: 1 }}>
+        {navItems.map((item) => (
+          <ListItem key={item.label} disablePadding>
+            <ListItemButton
+              component={Link}
+              href={item.href}
+              sx={{
+                textAlign: "center",
+                py: 1.5,
+                "&:hover": { backgroundColor: "#f5f5f5" },
+              }}
+            >
+              <ListItemText primary={item.label} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
 
-    {/* User Section */}
-    <Box px={2}>
-      {user ? (
-        <Stack spacing={2} alignItems="center">
-          
-          {/* Profile Button */}
-          <Button
-            fullWidth
-            variant="contained"
-            startIcon={<AccountCircleIcon />}
-            component={Link}
-            href="/profile"
-            sx={{ borderRadius: 2 }}
-          >
-            {user.email.split("@")[0]}
-          </Button>
+      <Divider sx={{ my: 2 }} />
 
-          {/* Optional Admin Link */}
-          {user?.role === "admin" && (
+      {/* User Section */}
+      <Box px={2}>
+        {user ? (
+          <Stack spacing={2} alignItems="center">
+
+            {/* Profile Button */}
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<AccountCircleIcon />}
+              component={Link}
+              href="/profile"
+              sx={{ borderRadius: 2 }}
+            >
+              {user.email.split("@")[0]}
+            </Button>
+
+            {/* Optional Admin Link */}
+            {user?.role === "admin" && (
+              <Button
+                fullWidth
+                variant="outlined"
+                component={Link}
+                href="/admin"
+              >
+                Admin Dashboard
+              </Button>
+            )}
+
+            {/* Logout */}
             <Button
               fullWidth
               variant="outlined"
-              component={Link}
-              href="/admin"
+              color="error"
+              onClick={handleLogout}
+              sx={{ borderRadius: 2 }}
             >
-              Admin Dashboard
+              Logout
             </Button>
-          )}
-
-          {/* Logout */}
+          </Stack>
+        ) : (
           <Button
             fullWidth
-            variant="outlined"
-            color="error"
-            onClick={handleLogout}
+            variant="contained"
+            component={Link}
+            href="/auth"
             sx={{ borderRadius: 2 }}
           >
-            Logout
+            Login / Register
           </Button>
-        </Stack>
-      ) : (
-        <Button
-          fullWidth
-          variant="contained"
-          component={Link}
-          href="/auth"
-          sx={{ borderRadius: 2 }}
-        >
-          Login / Register
-        </Button>
-      )}
+        )}
+      </Box>
     </Box>
-  </Box>
-);
+  );
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -166,7 +153,7 @@ const drawer = (
         sx={{ bgcolor: 'var(--surface-color)', color: 'var(--text-color)', boxShadow: 'var(--box-shadow)' }}
       >
         <Container maxWidth="lg">
-          <Toolbar disableGutters>
+          <Toolbar disableGutters sx={{ justifyContent: "space-between" ,borderBottom: '1px solid #c7ab8b'}}>
             <IconButton
               color="inherit"
               aria-label="open drawer"
@@ -176,27 +163,34 @@ const drawer = (
             >
               <MenuIcon />
             </IconButton>
-            <Typography
-              variant="h6"
+
+            <Box
               component={Link}
               href="/"
               sx={{
-                flexGrow: 1,
-                fontWeight: 700,
-                color: '#2A6498',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
+                display: "flex",
+                alignItems: "center",
+                textDecoration: "none",
+                flexGrow: { xs: 1, md: 0 },
               }}
             >
-              Nishaan <VerifiedIcon color="#2A6498" />
-            </Typography>
-            <IconButton component={Link} href="/cart" sx={{ mr: 1, color: 'var(--text-color)' ,display: { xs: 'block', md: 'none' } }}>
-                <Badge badgeContent={cartCount} color="error">
-                  <ShoppingCartIcon />
-                </Badge>
-              </IconButton>
+              <Box
+                component="img"
+                src="/assets/logo.png"
+                alt="Nishaan Logo"
+                sx={{
+                  height: { xs: 50, md: 100 },
+                  width: "auto",
+                  cursor: "pointer",
+                }}
+              />
+            </Box>
+
+            <IconButton component={Link} href="/cart" sx={{ mr: 1, color: 'var(--text-color)', display: { xs: 'block', md: 'none' } }}>
+              <Badge badgeContent={cartCount} color="error">
+                <ShoppingCartIcon />
+              </Badge>
+            </IconButton>
 
             <Box sx={{ display: { xs: 'none', md: 'block' } }}>
               {navItems.map((item) => (

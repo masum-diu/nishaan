@@ -248,7 +248,7 @@ function CheckoutPage() {
                       {formData.payment_method === "bkash" && (
                         <>
                           <Typography color="primary" fontWeight="bold" mt={2}>
-                            Send money to: 01623325407
+                            Send money to: 01700990433
                           </Typography>
                           <TextField
                             label="bKash Transaction ID"
