@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import MetaTags from '../../components/MetaTags';
 import {
   Box,
   Container,
@@ -189,11 +190,17 @@ export default function ShopPage() {
   }
 
   return (
-    <Box sx={{ py: 5 }}>
-      <Container maxWidth="lg">
-        <Typography variant="h4" fontWeight="bold" mb={4}>
-          Shop
-        </Typography>
+    <>
+      <MetaTags 
+        title="Nishaans - Shop All Products" 
+        description="Browse our complete collection of products. Find what you're looking for with our easy filters."
+        url="https://yoursite.com/products"
+      />
+      <Box sx={{ py: 5 }}>
+        <Container maxWidth="lg">
+          <Typography variant="h4" fontWeight="bold" mb={4}>
+            Shop
+          </Typography>
 
         <Grid container spacing={4}>
           {/* ================= FILTER SIDEBAR ================= */}
@@ -334,6 +341,7 @@ export default function ShopPage() {
           </Grid>
         </Grid>
       </Container>
-    </Box>
+      </Box>
+    </>
   );
 }

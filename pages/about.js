@@ -1,4 +1,5 @@
 import React from "react";
+import MetaTags from '../components/MetaTags';
 import {
   Box,
   Container,
@@ -12,32 +13,38 @@ import PeopleIcon from '@mui/icons-material/People';
 import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 
-const teamMembers = [
-  { name: "Masum Billah", role: "Founder & CEO", avatar: "/assets/avatar1.jpg" },
-  { name: "Jane Doe", role: "Head of Design", avatar: "/assets/avatar2.jpg" },
-  { name: "John Smith", role: "Lead Developer", avatar: "/assets/avatar3.jpg" },
-];
-
-const values = [
-    {
-        icon: <FavoriteIcon fontSize="large" color="primary" />,
-        title: "Customer First",
-        description: "We believe in creating a loyal customer base by providing an unparalleled shopping experience."
-    },
-    {
-        icon: <EmojiObjectsIcon fontSize="large" color="primary" />,
-        title: "Innovation",
-        description: "We constantly seek out the latest trends and technologies to bring you the best products."
-    },
-    {
-        icon: <PeopleIcon fontSize="large" color="primary" />,
-        title: "Community",
-        description: "We are more than a store; we are a community of fashion and tech enthusiasts."
-    }
-];
-
 function AboutPage() {
+  const teamMembers = [
+    { name: "Masum Billah", role: "Founder & CEO", avatar: "/assets/avatar1.jpg" },
+    { name: "Jane Doe", role: "Head of Design", avatar: "/assets/avatar2.jpg" },
+    { name: "John Smith", role: "Lead Developer", avatar: "/assets/avatar3.jpg" },
+  ];
+
+  const values = [
+    {
+      icon: <FavoriteIcon fontSize="large" color="primary" />,
+      title: "Customer First",
+      description: "We believe in creating a loyal customer base by providing an unparalleled shopping experience."
+    },
+    {
+      icon: <EmojiObjectsIcon fontSize="large" color="primary" />,
+      title: "Innovation",
+      description: "We constantly seek out the latest trends and technologies to bring you the best products."
+    },
+    {
+      icon: <PeopleIcon fontSize="large" color="primary" />,
+      title: "Community",
+      description: "We are more than a store; we are a community of fashion and tech enthusiasts."
+    }
+  ];
+
   return (
+    <>
+      <MetaTags 
+        title="Nishaans - About Us" 
+        description="Learn more about our store, team, and mission. We are dedicated to providing quality products."
+        url="https://yoursite.com/about"
+      />
     <Box sx={{ py: 5 }}>
       <Container maxWidth="lg">
         {/* Hero Section */}
@@ -108,6 +115,7 @@ function AboutPage() {
         </Box>
       </Container>
     </Box>
+    </>
   );
 }
 

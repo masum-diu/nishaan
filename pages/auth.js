@@ -1,5 +1,6 @@
 // pages/auth.js
 import React, { useState, useEffect } from "react";
+import MetaTags from '../components/MetaTags';
 import {
   Box,
   TextField,
@@ -104,13 +105,19 @@ export default function AuthPage() {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" mt={5} px={2}>
-        <Typography variant="h4" mb={3}>
-          {isLogin
-            ? `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Login`
-            : `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Register`}
-        </Typography>
+    <>
+      <MetaTags 
+        title="Nishaans - Login / Sign Up" 
+        description="Create an account or login to your existing account."
+        url="https://yoursite.com/auth"
+      />
+      <Container maxWidth="sm">
+        <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" my={5} px={2}>
+          <Typography variant="h4" mb={3}>
+            {isLogin
+              ? `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Login`
+              : `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Register`}
+          </Typography>
 
         {/* Role Toggle */}
         <ToggleButtonGroup
@@ -181,5 +188,6 @@ export default function AuthPage() {
         </Typography>
       </Box>
     </Container>
+    </>
   );
 }

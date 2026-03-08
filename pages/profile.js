@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import MetaTags from '../components/MetaTags';
 import { Box, Typography, TextField, Button, CircularProgress, Container } from "@mui/material";
 import AdminLayout from "@/components/AdminLayout"; // যদি admin panel, নাহলে সাধারণ Box use করুন
 import supabase from "@/lib/createClient";
@@ -52,9 +53,15 @@ export default function ProfilePage() {
   if (loading) return <Box display="flex" justifyContent="center" mt={5}><CircularProgress /></Box>;
 
   return (
-    <Container maxWidth="lg">
-    <Box  mt={5} p={3} border="1px solid #ddd" borderRadius={2}>
-      <Typography variant="h4" mb={3}>My Profile</Typography>
+    <>
+      <MetaTags 
+        title="Nishaans - My Profile" 
+        description="Manage your account and profile information."
+        url="https://yoursite.com/profile"
+      />
+      <Container maxWidth="lg">
+        <Box  mt={5} p={3} border="1px solid #ddd" borderRadius={2}>
+          <Typography variant="h4" mb={3}>My Profile</Typography>
 
       <TextField
         label="Email"
@@ -80,7 +87,8 @@ export default function ProfilePage() {
         </Button>
        
       </Box>
-    </Box>
-    </Container>
+        </Box>
+      </Container>
+    </>
   );
 }

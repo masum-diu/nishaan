@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import MetaTags from "../../components/MetaTags";
 import { useRouter } from "next/router";
 import {
   Box,
@@ -188,15 +189,29 @@ export default function ProductDetailPage() {
 
   if (loading || !product) {
     return (
-      <Container sx={{ py: 10, textAlign: "center" }}>
-        <CircularProgress />
-        <Typography sx={{ mt: 2 }}>Loading product...</Typography>
-      </Container>
+      <>
+        <MetaTags 
+          title="Loading Product - Your Store" 
+          description="Loading product details..."
+          url={`https://yoursite.com/products/${id}`}
+        />
+        <Container sx={{ py: 10, textAlign: "center" }}>
+          <CircularProgress />
+          <Typography sx={{ mt: 2 }}>Loading product...</Typography>
+        </Container>
+      </>
     );
   }
 
   return (
-    <Box sx={{ py: 5 }}>
+    <>
+      <MetaTags 
+        title={product?.name || "Product Details - Your Store"} 
+        description={product?.description || "View detailed product information."}
+        image={product?.image || "/assets/product-default.jpg"}
+        url={`https://yoursite.com/products/${id}`}
+      />
+      <Box sx={{ py: 5 }}>
       <Container maxWidth="lg">
         <Grid container spacing={5}>
           {/* IMAGE */}
@@ -327,5 +342,6 @@ export default function ProductDetailPage() {
         </Grid>
       </Container>
     </Box>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import MetaTags from '../components/MetaTags';
 import {
   Box,
   Container,
@@ -95,11 +96,17 @@ function CheckoutPage() {
   };
 
   return (
-    <Box sx={{ py: 5, bgcolor: "#f9f9f9" }}>
-      <Container maxWidth="lg">
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Checkout
-        </Typography>
+    <>
+      <MetaTags 
+        title="Nishaans - Checkout" 
+        description="Complete your purchase securely."
+        url="https://yoursite.com/checkout"
+      />
+      <Box sx={{ py: 5, bgcolor: "#f9f9f9" }}>
+        <Container maxWidth="lg">
+          <Typography variant="h4" fontWeight="bold" gutterBottom>
+            Checkout
+          </Typography>
         <Grid container spacing={4}>
           {/* Left: Order Summary */}
           <Grid size={{ xs: 12, md: 7 }}>
@@ -287,7 +294,8 @@ function CheckoutPage() {
           </Grid>
         </Grid>
       </Container>
-    </Box>
+      </Box>
+    </>
   );
 }
 

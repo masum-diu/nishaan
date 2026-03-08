@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from "react";
+import MetaTags from '../components/MetaTags';
 import {
   Box,
   Container,
@@ -27,7 +28,8 @@ export default function Home() {
   const [categorie, setCategorie] = useState([]);
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
-console.log(products,"home")
+
+  console.log(products, "home");
 
   useEffect(() => {
     const fetchBanners = async () => {
@@ -114,17 +116,30 @@ const calculateFinalPrice = (product) => {
   const router = useRouter();
   if (loading) {
     return (
-      <Container sx={{ py: 10, textAlign: "center" }}>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Loading product...
-        </Typography>
-      </Container>
+      <>
+        <MetaTags 
+          title="Nishaans - Home" 
+          description="Welcome to our online store. Browse our collection of quality products."
+          url="https://yoursite.com"
+        />
+        <Container sx={{ py: 10, textAlign: "center" }}>
+          <CircularProgress />
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Loading product...
+          </Typography>
+        </Container>
+      </>
     );
   }
   return (
-    <Box sx={{ pt: 2 }}>
-      <Container maxWidth="lg">
+    <>
+      <MetaTags 
+        title="Home - Your Store" 
+        description="Welcome to our online store. Browse our collection of quality products."
+        url="https://yoursite.com"
+      />
+      <Box sx={{ pt: 2 }}>
+        <Container maxWidth="lg">
 
         {/* ================= HERO SLIDER ================= */}
         <Swiper
@@ -347,6 +362,7 @@ const calculateFinalPrice = (product) => {
         </Grid>
 
       </Container>
-    </Box>
+      </Box>
+    </>
   );
 }

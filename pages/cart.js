@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Head from 'next/head';
+import MetaTags from '../components/MetaTags';
 import { useCart } from '../lib/CartContext';
 import {
   Container,
@@ -23,6 +23,8 @@ const CartPage = () => {
   const { cartItems, updateQuantity, removeFromCart } = useCart();
   const [subtotal, setSubtotal] = useState(0);
   const router = useRouter();
+  
+  // Early empty cart return
 console.log(cartItems,"cartdeats")
   // Calculate subtotal
   useEffect(() => {
@@ -35,23 +37,32 @@ console.log(cartItems,"cartdeats")
 
   if (cartItems.length === 0) {
     return (
-      <Container sx={{ py: 8, textAlign: 'center' }}>
-        <Typography variant="h4" gutterBottom>Your Cart is Empty</Typography>
-        <Typography color="text.secondary" sx={{ mb: 3 }}>
-          Looks like you haven't added anything to your cart yet.
-        </Typography>
-        <Button variant="contained" onClick={() => router.push('/products')}>
-          Continue Shopping
-        </Button>
-      </Container>
+      <>
+        <MetaTags 
+          title="Shopping Cart" 
+          description="Review your shopping cart and proceed to checkout."
+          url="https://yoursite.com/cart"
+        />
+        <Container sx={{ py: 8, textAlign: 'center' }}>
+          <Typography variant="h4" gutterBottom>Your Cart is Empty</Typography>
+          <Typography color="text.secondary" sx={{ mb: 3 }}>
+            Looks like you haven't added anything to your cart yet.
+          </Typography>
+          <Button variant="contained" onClick={() => router.push('/products')}>
+            Continue Shopping
+          </Button>
+        </Container>
+      </>
     );
   }
 
   return (
     <>
-      <Head>
-        <title>Shopping Cart</title>
-      </Head>
+      <MetaTags 
+        title="Shopping Cart" 
+        description="Review your shopping cart and proceed to checkout."
+        url="https://yoursite.com/cart"
+      />
       <Box sx={{ py: 5 }}>
         <Container maxWidth="lg">
           <Typography variant="h4" fontWeight="bold" gutterBottom>

@@ -1,4 +1,5 @@
 import React from "react";
+import MetaTags from '../components/MetaTags';
 import {
   Box,
   Container,
@@ -16,16 +17,22 @@ import PhoneIcon from '@mui/icons-material/Phone';
 
 function ContactPage() {
   return (
-    <Box sx={{ py: 5 }}>
-      <Container maxWidth="lg">
-        <Box sx={{ textAlign: "center", mb: 8 }}>
-          <Typography variant="h3" component="h1" fontWeight="bold" gutterBottom>
-            Contact Us
-          </Typography>
-          <Typography variant="h6" color="text.secondary" sx={{ maxWidth: '600px', mx: 'auto' }}>
-            Have questions or feedback? We'd love to hear from you. Reach out to us, and we'll get back to you shortly.
-          </Typography>
-        </Box>
+    <>
+      <MetaTags 
+        title="Nishaans - Contact Us" 
+        description="Get in touch with us. We're here to help and would love to hear from you."
+        url="https://yoursite.com/contact"
+      />
+      <Box sx={{ py: 5 }}>
+        <Container maxWidth="lg">
+          <Box sx={{ textAlign: "center", mb: 8 }}>
+            <Typography variant="h3" component="h1" fontWeight="bold" gutterBottom>
+              Contact Us
+            </Typography>
+            <Typography variant="h6" color="text.secondary" sx={{ maxWidth: '600px', mx: 'auto' }}>
+              Have questions or feedback? We'd love to hear from you. Reach out to us, and we'll get back to you shortly.
+            </Typography>
+          </Box>
 
         <Grid container spacing={5}>
           {/* Contact Form */}
@@ -86,6 +93,7 @@ function ContactPage() {
         </Grid>
       </Container>
     </Box>
+    </>
   );
 }
 
