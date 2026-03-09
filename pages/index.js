@@ -143,29 +143,41 @@ const calculateFinalPrice = (product) => {
 
         {/* ================= HERO SLIDER ================= */}
         <Swiper
-          modules={[Autoplay, Pagination]}
-          autoplay={{ delay: 3000 }}
-          pagination={{ clickable: true }}
-          loop
-        >
-          {banners.map((banner) => (
-            <SwiperSlide key={banner.id}>
-              <Box
-                component="img"
-                src={banner.image_url}
-                alt={banner.title}
-                onClick={() => router.push("/products")}
-                sx={{
-                  width: "100%",
-                  height: { xs: 220, md: 420 },
-                  objectFit: "cover",
-                  borderRadius: 3,
-                 
-                }}
-              />
-            </SwiperSlide>
-          ))}
-        </Swiper>
+  modules={[Autoplay, Pagination]}
+  autoplay={{ delay: 3000 }}
+  pagination={{ clickable: true }}
+  loop
+>
+  {banners.map((banner) => (
+    <SwiperSlide key={banner.id}>
+      <Box
+        sx={{
+          width: "100%",
+          height: { xs: 220, md: 420 },
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#f5f5f5",
+          borderRadius: 3,
+          overflow: "hidden",
+        }}
+      >
+        <Box
+          component="img"
+          src={banner.image_url}
+          alt={banner.title}
+          onClick={() => router.push("/products")}
+          sx={{
+            width: "100%",
+            height: "100%",
+            // objectFit: "contain",
+            cursor: "pointer",
+          }}
+        />
+      </Box>
+    </SwiperSlide>
+  ))}
+</Swiper>
 
         {/* ================= FEATURED PRODUCTS (Horizontal Style) ================= */}
         <Typography variant="h5" fontWeight="bold" sx={{ mt: 2, mb: 2 }}>
