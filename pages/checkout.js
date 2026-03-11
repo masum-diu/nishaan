@@ -22,8 +22,10 @@ import supabase from "@/lib/createClient";
 
 function CheckoutPage() {
   const { cartItems, clearCart } = useCart();
+  console.log(cartItems, "checkoutpage")
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [sizes, setSizes] = useState([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -35,26 +37,31 @@ function CheckoutPage() {
     payment_method: "cash_on_delivery", // default
     bkash_transaction_id: "",
   });
-
+  const calculateFinalPrice = (item) => {
+    if (!item.discount_type || !item.discount_value) return item.base_price;
+    if (item.discount_type === "percentage") return item.base_price - (item.base_price * item.discount_value / 100);
+    if (item.discount_type === "fixed") return item.base_price - item.discount_value;
+    return item.base_price;
+  };
   const subtotal = cartItems.reduce(
-    (acc, item) => acc + item.price * item.quantity,
+    (acc, item) => acc + calculateFinalPrice(item) * item.quantity,
     0,
   );
 
-  const shipping = formData.city.toLowerCase() === "dhaka" ? 60 : 110;
+  const shipping = formData.city.toLowerCase() === "dhaka" ? 100 : 150;
   const total = subtotal + shipping;
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
 
-     const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-   router.push("/auth");
-    return;
-  }
+    if (!user) {
+      router.push("/auth");
+      return;
+    }
 
     if (formData.payment_method === "bkash" && !formData.bkash_transaction_id) {
       alert("Please provide your bKash transaction ID!");
@@ -80,6 +87,19 @@ function CheckoutPage() {
       shipping,
       total,
     };
+    useEffect(() => {
+      const fetchData = async () => {
+        const { data: sizeData } = await supabase
+          .from("sizes")
+          .select("id,name");
+
+
+
+        if (sizeData) setSizes(sizeData);
+
+      };
+      fetchData();
+    }, []);
 
     // Save order to Supabase
     const { data, error } = await supabase.from("orders").insert([orderData]);
@@ -97,8 +117,8 @@ function CheckoutPage() {
 
   return (
     <>
-      <MetaTags 
-        title="Nishaans - Checkout" 
+      <MetaTags
+        title="Nishaans - Checkout"
         description="Complete your purchase securely."
         url="https://yoursite.com/checkout"
       />
@@ -107,193 +127,197 @@ function CheckoutPage() {
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             Checkout
           </Typography>
-        <Grid container spacing={4}>
-          {/* Left: Order Summary */}
-          <Grid size={{ xs: 12, md: 7 }}>
-            <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
-              <CardContent>
-                <Typography variant="h6" fontWeight="bold" mb={2}>
-                  Order Summary
-                </Typography>
-                <Stack spacing={2} divider={<Divider />}>
-                  {cartItems.map((item) => (
-                    <Stack
-                      direction="row"
-                      key={`${item.id}-${item.size}`}
-                      spacing={2}
-                      alignItems="center"
-                    >
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        style={{ width: 80, height: 80, borderRadius: 8 }}
-                      />
-                      <Box flexGrow={1}>
-                        <Typography fontWeight="bold">{item.name}</Typography>
-                        <Typography color="text.secondary">
-                          Size: {item.size}
-                        </Typography>
-                        <Typography color="text.secondary">
-                          Tk {item.price} x {item.quantity}
-                        </Typography>
-                      </Box>
-                      <Typography fontWeight="bold">
-                        Tk {item.price * item.quantity}
-                      </Typography>
-                    </Stack>
-                  ))}
-                </Stack>
-                <Divider sx={{ my: 2 }} />
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography>Subtotal</Typography>
-                  <Typography>Tk {subtotal.toFixed(2)}</Typography>
-                </Stack>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography>Shipping</Typography>
-                  <Typography>Tk {shipping.toFixed(2)}</Typography>
-                </Stack>
-                <Divider sx={{ my: 1 }} />
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography fontWeight="bold">Total</Typography>
-                  <Typography fontWeight="bold">
-                    Tk {total.toFixed(2)}
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Right: Shipping & Payment */}
-          <Grid size={{ xs: 12, md: 5 }}>
-            <Stack spacing={3}>
+          <Grid container spacing={4}>
+            {/* Left: Order Summary */}
+            <Grid size={{ xs: 12, md: 7 }}>
               <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
                 <CardContent>
                   <Typography variant="h6" fontWeight="bold" mb={2}>
-                    Shipping Information
+                    Order Summary
                   </Typography>
-                  <form onSubmit={handlePlaceOrder}>
-                    <Stack spacing={2}>
-                      <TextField
-                        label="Full Name"
-                        fullWidth
-                        required
-                        value={formData.user_name}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            user_name: e.target.value,
-                          })
-                        }
-                      />
-                      <TextField
-                        label="Address"
-                        fullWidth
-                        required
-                        value={formData.address}
-                        onChange={(e) =>
-                          setFormData({ ...formData, address: e.target.value })
-                        }
-                      />
-                      <TextField
-                        label="City"
-                        fullWidth
-                        required
-                        value={formData.city}
-                        onChange={(e) =>
-                          setFormData({ ...formData, city: e.target.value })
-                        }
-                      />
-                      <TextField
-                        label="Postal Code"
-                        fullWidth
-                        required
-                        value={formData.postal_code}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            postal_code: e.target.value,
-                          })
-                        }
-                      />
-                      <TextField
-                        label="Phone Number"
-                        fullWidth
-                        required
-                        value={formData.phone_number}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            phone_number: e.target.value,
-                          })
-                        }
-                      />
-
-                      {/* Payment Method */}
-                      <Typography fontWeight="bold">Payment Method</Typography>
-                      <RadioGroup
-                        value={formData.payment_method}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            payment_method: e.target.value,
-                          })
-                        }
+                  <Stack spacing={2} divider={<Divider />}>
+                    {cartItems.map((item) => {
+                       const sizeName =
+                        sizes.find((s) => s.id === item.size)?.name ||
+                        item.size;
+                      return(
+                      <Stack
+                        direction="row"
+                        key={`${item.id}-${item.size}`}
+                        spacing={2}
+                        alignItems="center"
                       >
-                        <FormControlLabel
-                          value="cash_on_delivery"
-                          control={<Radio />}
-                          label="Cash on Delivery"
+                        <img
+                          src={item.variant?.image_url || item.image}
+                          alt={item.name}
+                          style={{ width: 80, height: 80, borderRadius: 8 }}
                         />
-                        <FormControlLabel
-                          value="bkash"
-                          control={<Radio />}
-                          label="bKash Payment"
-                        />
-                      </RadioGroup>
-
-                      {/* bKash Transaction ID */}
-                      {formData.payment_method === "bkash" && (
-                        <>
-                          <Typography color="primary" fontWeight="bold" mt={2}>
-                            Send money to: 01700990433
+                        <Box flexGrow={1}>
+                          <Typography fontWeight="bold">{item.name}</Typography>
+                          <Typography color="text.secondary">
+                            Size:{sizeName}
                           </Typography>
-                          <TextField
-                            label="bKash Transaction ID"
-                            fullWidth
-                            required
-                            value={formData.bkash_transaction_id}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                bkash_transaction_id: e.target.value,
-                              })
-                            }
-                            helperText="After sending money, enter the transaction ID here."
-                          />
-                        </>
-                      )}
-
-                      <Button
-                        type="submit"
-                        variant="contained"
-                        size="large"
-                        fullWidth
-                        disabled={loading}
-                      >
-                        {loading ? (
-                          <CircularProgress size={24} />
-                        ) : (
-                          "Place Order"
-                        )}
-                      </Button>
-                    </Stack>
-                  </form>
+                          <Typography color="text.secondary">
+                            Tk {item.price} x {item.quantity}
+                          </Typography>
+                        </Box>
+                        <Typography fontWeight="bold">
+                          Tk {(calculateFinalPrice(item) * item.quantity).toFixed(2)}
+                        </Typography>
+                      </Stack>
+                    )})}
+                  </Stack>
+                  <Divider sx={{ my: 2 }} />
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography>Subtotal</Typography>
+                    <Typography>Tk {subtotal.toFixed(2)}</Typography>
+                  </Stack>
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography>Shipping</Typography>
+                    <Typography>Tk {shipping.toFixed(2)}</Typography>
+                  </Stack>
+                  <Divider sx={{ my: 1 }} />
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography fontWeight="bold">Total</Typography>
+                    <Typography fontWeight="bold">
+                      Tk {total.toFixed(2)}
+                    </Typography>
+                  </Stack>
                 </CardContent>
               </Card>
-            </Stack>
+            </Grid>
+
+            {/* Right: Shipping & Payment */}
+            <Grid size={{ xs: 12, md: 5 }}>
+              <Stack spacing={3}>
+                <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
+                  <CardContent>
+                    <Typography variant="h6" fontWeight="bold" mb={2}>
+                      Shipping Information
+                    </Typography>
+                    <form onSubmit={handlePlaceOrder}>
+                      <Stack spacing={2}>
+                        <TextField
+                          label="Full Name"
+                          fullWidth
+                          required
+                          value={formData.user_name}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              user_name: e.target.value,
+                            })
+                          }
+                        />
+                        <TextField
+                          label="Address"
+                          fullWidth
+                          required
+                          value={formData.address}
+                          onChange={(e) =>
+                            setFormData({ ...formData, address: e.target.value })
+                          }
+                        />
+                        <TextField
+                          label="City"
+                          fullWidth
+                          required
+                          value={formData.city}
+                          onChange={(e) =>
+                            setFormData({ ...formData, city: e.target.value })
+                          }
+                        />
+                        <TextField
+                          label="Postal Code"
+                          fullWidth
+                          required
+                          value={formData.postal_code}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              postal_code: e.target.value,
+                            })
+                          }
+                        />
+                        <TextField
+                          label="Phone Number"
+                          fullWidth
+                          required
+                          value={formData.phone_number}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              phone_number: e.target.value,
+                            })
+                          }
+                        />
+
+                        {/* Payment Method */}
+                        <Typography fontWeight="bold">Payment Method</Typography>
+                        <RadioGroup
+                          value={formData.payment_method}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              payment_method: e.target.value,
+                            })
+                          }
+                        >
+                          <FormControlLabel
+                            value="cash_on_delivery"
+                            control={<Radio />}
+                            label="Cash on Delivery"
+                          />
+                          <FormControlLabel
+                            value="bkash"
+                            control={<Radio />}
+                            label="bKash Payment"
+                          />
+                        </RadioGroup>
+
+                        {/* bKash Transaction ID */}
+                        {formData.payment_method === "bkash" && (
+                          <>
+                            <Typography color="primary" fontWeight="bold" mt={2}>
+                              Send money to: 01700990433
+                            </Typography>
+                            <TextField
+                              label="bKash Transaction ID"
+                              fullWidth
+                              required
+                              value={formData.bkash_transaction_id}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  bkash_transaction_id: e.target.value,
+                                })
+                              }
+                              helperText="After sending money, enter the transaction ID here."
+                            />
+                          </>
+                        )}
+
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          size="large"
+                          fullWidth
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <CircularProgress size={24} />
+                          ) : (
+                            "Place Order"
+                          )}
+                        </Button>
+                      </Stack>
+                    </form>
+                  </CardContent>
+                </Card>
+              </Stack>
+            </Grid>
           </Grid>
-        </Grid>
-      </Container>
+        </Container>
       </Box>
     </>
   );

@@ -34,7 +34,8 @@ const Footer = () => {
               }}
             />
             <Typography variant="body2" sx={{ mb: 2, opacity: 0.8 }}>
-              Your one-stop shop for all things amazing. We provide high-quality products with exceptional customer service.
+            Nishaan is built to bring global products closer to you. We focus on quality, affordability,
+              and items that make everyday life better.
             </Typography>
             <Stack direction="row" spacing={1}>
               <IconButton
@@ -50,7 +51,10 @@ const Footer = () => {
               <IconButton aria-label="Twitter" sx={{ color: '#fff' }}>
                 <TwitterIcon />
               </IconButton>
-              <IconButton aria-label="Instagram" sx={{ color: '#fff' }}>
+              <IconButton component="a"
+                href=" https://www.instagram.com/nishaanbd/?hl=en"
+                target="_blank"
+                rel="noopener noreferrer" aria-label="Instagram" sx={{ color: '#fff' }}>
                 <InstagramIcon />
               </IconButton>
               <IconButton aria-label="LinkedIn" sx={{ color: '#fff' }}>
@@ -93,15 +97,15 @@ const Footer = () => {
             <Stack spacing={2}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <LocationOnIcon sx={{ fontSize: 20 }} />
-                <Typography variant="body2">Bisnopro, kuti, kasba, Brahmanbaria, Bangladesh</Typography>
+                <Typography variant="body2">Dhaka Bangladesh</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <PhoneIcon sx={{ fontSize: 20 }} />
-                <Typography variant="body2">+01700990433</Typography>
+                <Typography variant="body2">+8801700990433</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <EmailIcon sx={{ fontSize: 20 }} />
-                <Typography variant="body2">info@nishaan.com</Typography>
+                <Typography variant="body2">info@nishaans.com</Typography>
               </Box>
             </Stack>
           </Grid>
