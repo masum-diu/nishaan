@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import MetaTags from '../components/MetaTags';
 import {
   Box,
@@ -26,7 +26,19 @@ function CheckoutPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [sizes, setSizes] = useState([]);
+  console.log(sizes,"sizespage")
+useEffect(() => {
+      const fetchData = async () => {
+        const { data: sizeData } = await supabase
+          .from("sizes")
+          .select("id,name");
+        if (sizeData) {
+          setSizes(sizeData);
+        };
 
+      };
+      fetchData();
+    }, []);
   // Form state
   const [formData, setFormData] = useState({
     user_name: "",
@@ -36,6 +48,7 @@ function CheckoutPage() {
     phone_number: "",
     payment_method: "cash_on_delivery", // default
     bkash_transaction_id: "",
+    
   });
   const calculateFinalPrice = (item) => {
     if (!item.discount_type || !item.discount_value) return item.base_price;
@@ -83,23 +96,9 @@ function CheckoutPage() {
           ? formData.bkash_transaction_id
           : null,
       items: cartItems,
-      subtotal,
-      shipping,
-      total,
+      total: total,
     };
-    useEffect(() => {
-      const fetchData = async () => {
-        const { data: sizeData } = await supabase
-          .from("sizes")
-          .select("id,name");
-
-
-
-        if (sizeData) setSizes(sizeData);
-
-      };
-      fetchData();
-    }, []);
+    
 
     // Save order to Supabase
     const { data, error } = await supabase.from("orders").insert([orderData]);
@@ -140,6 +139,7 @@ function CheckoutPage() {
                        const sizeName =
                         sizes.find((s) => s.id === item.size)?.name ||
                         item.size;
+                        console.log(sizeName)
                       return(
                       <Stack
                         direction="row"

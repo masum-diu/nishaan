@@ -14,6 +14,9 @@ import supabase from "@/lib/createClient";
 export default function OrdersAdminPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sizes, setSizes] = useState([]);
+  const [colors, setColors] = useState([]);
+  console.log(orders, "dodr");
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -47,7 +50,30 @@ export default function OrdersAdminPage() {
     if (error) console.log("Error deleting order:", error.message);
     else fetchOrders();
   };
+  // fetch sizes and colors
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: sizeData } = await supabase.from("sizes").select("id,name");
 
+      const { data: colorData } = await supabase
+        .from("colors")
+        .select("id,name,hex_code");
+
+      if (sizeData) setSizes(sizeData);
+      if (colorData) setColors(colorData);
+    };
+
+    fetchData();
+  }, []);
+
+  const calculateFinalPrice = (item) => {
+    if (!item.discount_type || !item.discount_value) return item.base_price;
+    if (item.discount_type === "percentage")
+      return item.base_price - (item.base_price * item.discount_value) / 100;
+    if (item.discount_type === "fixed")
+      return item.base_price - item.discount_value;
+    return item.base_price;
+  };
   if (loading)
     return (
       <AdminLayout>
@@ -93,9 +119,7 @@ export default function OrdersAdminPage() {
             >
               <Typography fontWeight="bold">Order ID: {order.id}</Typography>
               <Typography>Status: {order.status.toUpperCase()}</Typography>
-              <Typography fontWeight="bold">
-                Total: Tk {order.total}
-              </Typography>
+              <Typography fontWeight="bold">Total: Tk {order.total}</Typography>
             </Stack>
 
             <Divider sx={{ my: 2 }} />
@@ -112,8 +136,9 @@ export default function OrdersAdminPage() {
                   Address: {order.address}, {order.city}, {order.postal_code}
                 </Typography>
                 <Typography>Phone: {order.phone_number}</Typography>
-                <Typography>Date: {new Date(order.created_at).toLocaleString()}</Typography>  
-                
+                <Typography>
+                  Date: {new Date(order.created_at).toLocaleString()}
+                </Typography>
               </Box>
               <Box>
                 <Typography>Payment Method: {order.payment_method}</Typography>
@@ -135,7 +160,9 @@ export default function OrdersAdminPage() {
               spacing={1}
               sx={{ maxHeight: 200, overflowY: "auto", pr: 1 }}
             >
-              {order.items.map((item) => (
+              {order.items.map((item) => {
+                const colorData = colors.find((c) => c.id === item.color);
+                return (
                 <Stack
                   key={item.id}
                   direction="row"
@@ -148,7 +175,7 @@ export default function OrdersAdminPage() {
                   }}
                 >
                   <img
-                    src={item.image}
+                    src={item.variant?.image_url || item.image}
                     alt={item.name}
                     style={{
                       width: 60,
@@ -159,16 +186,37 @@ export default function OrdersAdminPage() {
                   />
                   <Box flexGrow={1}>
                     <Typography fontWeight="bold">{item.name}</Typography>
-                    <Typography>Size: {item.size}</Typography>
                     <Typography>
-                      Price: Tk {item.price} x {item.quantity}
+                      Size:{" "}
+                      {sizes.find((s) => s.id === item.size)?.name || item.size}
+                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Typography>Color:</Typography>
+
+                      {colorData ? (
+                        <Box
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: "50%",
+                            backgroundColor: colorData.hex_code,
+                            border: "1px solid #ccc",
+                          }}
+                        />
+                      ) : (
+                        <Typography>N/A</Typography>
+                      )}
+                    </Stack>
+
+                    <Typography>
+                      Price: Tk {calculateFinalPrice(item)} x {item.quantity}
                     </Typography>
                   </Box>
                   <Typography fontWeight="bold">
-                    Tk {item.price * item.quantity}
+                    Tk {calculateFinalPrice(item) * item.quantity}
                   </Typography>
                 </Stack>
-              ))}
+              )})}
             </Stack>
 
             <Divider sx={{ my: 2 }} />
