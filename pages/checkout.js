@@ -71,10 +71,10 @@ useEffect(() => {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      router.push("/auth");
-      return;
-    }
+    // if (!user) {
+    //   router.push("/auth");
+    //   return;
+    // }
 
     if (formData.payment_method === "bkash" && !formData.bkash_transaction_id) {
       alert("Please provide your bKash transaction ID!");
