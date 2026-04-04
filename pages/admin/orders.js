@@ -20,100 +20,226 @@ export default function OrdersAdminPage() {
 
 
 const generateOrderPDF = async (order) => {
-  const doc = new jsPDF("p", "pt", "a4"); // Portrait, points, A4
+  const doc = new jsPDF("p", "pt", "a4");
   const pageWidth = doc.internal.pageSize.getWidth();
-  let y = 40; // vertical start position
+  const margin = 40;
+  const contentWidth = pageWidth - margin * 2;
+  let y = 30;
 
-  // ---------------- HEADER ----------------
-  doc.setFontSize(22);
-  doc.setTextColor("#1976d2"); // Brand color
-  doc.setFont("helvetica", "bold");
-  doc.text("Nishaans", pageWidth / 2, y, { align: "center" });
+  const invoiceNumber = `INV-${Date.now()}-${order.id}`;
 
-  y += 25;
-  doc.setFontSize(14);
-  doc.setTextColor("#000");
-  doc.setFont("helvetica", "normal");
-  doc.text("Order Invoice", pageWidth / 2, y, { align: "center" });
+  // helpers
+  const drawLine = (yPos) => {
+    doc.setDrawColor(220, 220, 220);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+  };
+  const checkPage = () => {
+    if (y > 780) { doc.addPage(); y = 40; }
+  };
 
-  y += 30;
+  // ---------------- LOGO + HEADER BAND ----------------
+  const loadImage = (src) =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width; canvas.height = img.height;
+        canvas.getContext("2d").drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
 
-  // ---------------- CUSTOMER INFO ----------------
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text("Customer Information:", 40, y);
-  y += 15;
-  doc.setFont("helvetica", "normal");
-  doc.text(`Name: ${order.user_name}`, 50, y);
-  y += 15;
-  doc.text(`Phone: ${order.phone_number}`, 50, y);
-  y += 15;
-  doc.text(`Address: ${order.address}, ${order.city}, ${order.postal_code}`, 50, y);
-  y += 15;
-  doc.text(`Payment Method: ${order.payment_method}`, 50, y);
-  if (order.payment_method === "bkash") {
-    y += 15;
-    doc.text(`Bkash Transaction ID: ${order.bkash_transaction_id}`, 50, y);
+  const [dr, dg, db] = [199, 171, 139]; // #c7ab8b
+
+  doc.setFillColor(dr, dg, db);
+  doc.rect(0, 0, pageWidth, 90, "F");
+
+  const logoData = await loadImage("/assets/logo.png");
+  if (logoData) {
+    doc.addImage(logoData, "PNG", margin, 15, 55, 55, undefined, "FAST");
   }
 
-  y += 25;
+  // Invoice # top-right
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Invoice: ${invoiceNumber}`, pageWidth - margin, 30, { align: "right" });
+  doc.text(`Date: ${new Date(order.created_at).toLocaleDateString()}`, pageWidth - margin, 44, { align: "right" });
+  doc.text(`Order ID: ${order.id}`, pageWidth - margin, 58, { align: "right" });
 
-  // ---------------- ORDER INFO ----------------
+  // Brand name right side of logo
+  doc.setFontSize(24);
+  doc.setTextColor(60, 35, 10);
   doc.setFont("helvetica", "bold");
-  doc.text("Order Details:", 40, y);
-  y += 20;
-
-  // Table header
+  doc.text("Nishaans", margin + 65, 45);
   doc.setFontSize(11);
-  doc.setFillColor(240, 240, 240);
-  doc.rect(40, y - 12, pageWidth - 80, 20, "F"); // header background
-  doc.setTextColor("#000");
-  doc.text("Item", 45, y);
-  doc.text("Size", 150, y);
-  doc.text("Color", 220, y);
-  doc.text("Qty", 290, y);
-  doc.text("Price", 340, y);
-  doc.text("Total", 400, y);
-  y += 10;
+  doc.setFont("helvetica", "normal");
+  doc.text("Order Invoice", margin + 65, 62);
+
+  y = 110;
+
+  // ---------------- CUSTOMER INFO BOX ----------------
+  doc.setFillColor(245, 248, 255);
+  doc.roundedRect(margin, y, contentWidth, 90, 4, 4, "F");
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(dr, dg, db);
+  doc.text("CUSTOMER INFORMATION", margin + 10, y + 18);
 
   doc.setFont("helvetica", "normal");
+  doc.setTextColor(50, 50, 50);
+  doc.setFontSize(10);
 
-  // Items
-  order.items.forEach((item) => {
+  const col1x = margin + 10;
+  const col2x = pageWidth / 2 + 10;
+
+  doc.setFont("helvetica", "bold"); doc.text("Name:", col1x, y + 36);
+  doc.setFont("helvetica", "normal"); doc.text(order.user_name || "-", col1x + 40, y + 36);
+
+  doc.setFont("helvetica", "bold"); doc.text("Phone:", col1x, y + 52);
+  doc.setFont("helvetica", "normal"); doc.text(order.phone_number || "-", col1x + 42, y + 52);
+
+  doc.setFont("helvetica", "bold"); doc.text("Payment:", col2x, y + 36);
+  doc.setFont("helvetica", "normal"); doc.text(order.payment_method || "-", col2x + 52, y + 36);
+
+  if (order.payment_method === "bkash") {
+    doc.setFont("helvetica", "bold"); doc.text("Bkash TxID:", col2x, y + 52);
+    doc.setFont("helvetica", "normal"); doc.text(order.bkash_transaction_id || "-", col2x + 65, y + 52);
+  }
+
+  // Address — wrapped
+  const fullAddress = `${order.address}, ${order.city}, ${order.postal_code}`;
+  const addrLines = doc.splitTextToSize(`Address: ${fullAddress}`, contentWidth - 20);
+  doc.setFont("helvetica", "normal");
+  doc.text(addrLines, col1x, y + 68);
+
+  y += 105;
+
+  // ---------------- TABLE ----------------
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(dr, dg, db);
+  doc.text("ORDER DETAILS", margin, y);
+  y += 12;
+
+  // Column x positions & widths
+  const cols = {
+    item:  { x: margin,       w: 160 },
+    size:  { x: margin + 165, w: 55  },
+    color: { x: margin + 225, w: 75  },
+    qty:   { x: margin + 305, w: 35  },
+    price: { x: margin + 345, w: 65  },
+    total: { x: margin + 415, w: 65  },
+  };
+
+  // Table header row
+  doc.setFillColor(dr, dg, db);
+  doc.rect(margin, y, contentWidth, 22, "F");
+  doc.setFontSize(10);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.text("Item",    cols.item.x  + 4, y + 15);
+  doc.text("Size",   cols.size.x  + 4, y + 15);
+  doc.text("Color",  cols.color.x + 4, y + 15);
+  doc.text("Qty",    cols.qty.x   + 4, y + 15);
+  doc.text("Price",  cols.price.x + 4, y + 15);
+  doc.text("Total",  cols.total.x + 4, y + 15);
+  y += 22;
+
+  // Rows
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  order.items.forEach((item, idx) => {
+    checkPage();
     const colorData = colors.find((c) => c.id === item.color);
-    const itemName = item.name.length > 20 ? item.name.slice(0, 20) + "..." : item.name;
-    doc.text(itemName, 45, y);
-    doc.text(sizes.find((s) => s.id === item.size)?.name || item.size, 150, y);
-    doc.text(colorData ? colorData.name : "N/A", 220, y);
-    doc.text(String(item.quantity), 290, y);
-    doc.text(`Tk ${calculateFinalPrice(item)}`, 340, y);
-    doc.text(`Tk ${calculateFinalPrice(item) * item.quantity}`, 400, y);
-    y += 15;
+    const sizeName = sizes.find((s) => s.id === item.size)?.name || String(item.size);
+    const colorName = colorData ? colorData.name : "N/A";
+    const price = calculateFinalPrice(item);
+    const rowTotal = price * item.quantity;
 
-    // If y exceeds page height, add new page
-    if (y > 750) {
-      doc.addPage();
-      y = 40;
+    // Alternate row bg
+    if (idx % 2 === 0) {
+      doc.setFillColor(245, 248, 255);
+      doc.rect(margin, y, contentWidth, 22, "F");
     }
+
+    doc.setTextColor(40, 40, 40);
+    const nameLines = doc.splitTextToSize(item.name, cols.item.w - 6);
+    doc.text(nameLines[0], cols.item.x  + 4, y + 14);
+    doc.text(sizeName,     cols.size.x  + 4, y + 14);
+
+    // Color swatch circle + name
+    if (colorData?.hex_code) {
+      const hex = colorData.hex_code.replace("#", "");
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      doc.setFillColor(r, g, b);
+      doc.setDrawColor(180, 180, 180);
+      doc.circle(cols.color.x + 8, y + 10, 5, "FD");
+      doc.setTextColor(40, 40, 40);
+      doc.text(colorName, cols.color.x + 17, y + 14);
+    } else {
+      doc.text("N/A", cols.color.x + 4, y + 14);
+    }
+
+    doc.text(String(item.quantity), cols.qty.x + 4, y + 14);
+    doc.text(`Tk ${price}`,     cols.price.x + 4, y + 14);
+    doc.text(`Tk ${rowTotal}`,  cols.total.x + 4, y + 14);
+
+    // bottom border
+    doc.setDrawColor(220, 220, 220);
+    // doc.line(margin, y + 22, pageWidth - margin, y + 22);
+    // y += 22;
   });
 
-  y += 20;
-  doc.setFont("helvetica", "bold");
-  doc.text(`Grand Total: Tk ${order.total}`, 40, y);
+  // ---------------- TOTALS ----------------
+  y += 15;
+  checkPage();
 
-  y += 30;
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(10);
-  doc.setTextColor("#555");
-  doc.text(
-    "Thank you for shopping with Nishaan!",
-    pageWidth / 2,
-    y,
-    { align: "center" }
+  // Delivery charge = total - sum of item totals
+  const itemsSum = order.items.reduce(
+    (acc, item) => acc + calculateFinalPrice(item) * item.quantity, 0
   );
+  const deliveryCharge = order.total - itemsSum;
 
-  // Save PDF
-  doc.save(`Order_${order.id}.pdf`);
+  const totalsX = pageWidth - margin - 180;
+  doc.setFillColor(245, 248, 255);
+  doc.roundedRect(totalsX, y, 180, deliveryCharge > 0 ? 62 : 42, 4, 4, "F");
+
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  doc.setFont("helvetica", "normal");
+  doc.text("Items Subtotal:", totalsX + 8, y + 16);
+  doc.text(`Tk ${itemsSum}`, pageWidth - margin - 8, y + 16, { align: "right" });
+
+  if (deliveryCharge > 0) {
+    doc.text("Delivery Charge:", totalsX + 8, y + 32);
+    doc.text(`Tk ${deliveryCharge}`, pageWidth - margin - 8, y + 32, { align: "right" });
+  }
+
+  drawLine(y + (deliveryCharge > 0 ? 44 : 28));
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(dr, dg, db);
+  doc.setFontSize(11);
+  const grandY = y + (deliveryCharge > 0 ? 58 : 40);
+  doc.text("Grand Total:", totalsX + 8, grandY);
+  doc.text(`Tk ${order.total}`, pageWidth - margin - 8, grandY, { align: "right" });
+
+  // ---------------- FOOTER ----------------
+  y = grandY + 40;
+  checkPage();
+  drawLine(y);
+  y += 14;
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(9);
+  doc.setTextColor(150, 150, 150);
+  doc.text("Thank you for shopping with Nishaans! ", pageWidth / 2, y, { align: "center" });
+
+  doc.save(`${invoiceNumber}.pdf`);
 };
 
   const fetchOrders = async () => {
