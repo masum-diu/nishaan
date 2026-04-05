@@ -1,134 +1,102 @@
-import React, { useEffect, useState } from "react";
-import AdminLayout from "../../components/AdminLayout";
+import React, { useState, useEffect } from "react";
 import {
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  CircularProgress,
+  Box, TextField, Button, Typography, CircularProgress,
+  Container, Paper, Divider,
 } from "@mui/material";
-import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import PeopleIcon from "@mui/icons-material/People";
+import { useRouter } from "next/router";
 import supabase from "@/lib/createClient";
 
-const StatCard = ({ title, value, icon, gradient }) => (
-  <Card
-    sx={{
-      borderRadius: 4,
-      background: gradient,
-      color: "#fff",
-      boxShadow: 4,
-    }}
-  >
-    <CardContent sx={{ display: "flex", alignItems: "center" }}>
-      <Box
-        sx={{
-          bgcolor: "rgba(255,255,255,0.2)",
-          borderRadius: "50%",
-          p: 2,
-          mr: 2,
-        }}
-      >
-        {icon}
-      </Box>
-      <Box>
-        <Typography sx={{ opacity: 0.9 }}>{title}</Typography>
-        <Typography variant="h5" fontWeight="bold">
-          {value}
-        </Typography>
-      </Box>
-    </CardContent>
-  </Card>
-);
-
-function AdminDashboard() {
-  const [loading, setLoading] = useState(true);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalOrders, setTotalOrders] = useState(0);
-  const [totalCustomers, setTotalCustomers] = useState(0);
+export default function AdminLoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    const check = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        const { data: profile } = await supabase
+          .from("profiles").select("role").eq("id", session.user.id).single();
+        if (profile?.role === "admin") router.push("/admin/dashboard");
+      }
+    };
+    check();
+  }, [router]);
 
-  const fetchDashboardData = async () => {
+  const handleLogin = async () => {
     setLoading(true);
+    setError("");
+    try {
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+      if (loginError) throw loginError;
 
-    const { data, error } = await supabase.from("orders").select("*");
+      const { data: profile } = await supabase
+        .from("profiles").select("role").eq("id", data.user.id).single();
 
-    if (error) {
-      console.log("Dashboard fetch error:", error.message);
+      if (profile?.role !== "admin") {
+        await supabase.auth.signOut();
+        throw new Error("Access denied. Admin only.");
+      }
+      router.push("/admin");
+    } catch (err) {
+      setError(err.message || "Something went wrong");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const orders = data || [];
-
-    // Total Orders
-    setTotalOrders(orders.length);
-
-    // Total Revenue (only confirmed)
-    const revenue = orders
-      .filter((o) => o.status === "confirmed")
-      .reduce((sum, o) => sum + o.total, 0);
-    setTotalRevenue(revenue);
-
-    // Unique Customers (by phone number)
-    const uniqueCustomers = [
-      ...new Set(orders.map((o) => o.phone_number)),
-    ];
-    setTotalCustomers(uniqueCustomers.length);
-
-    setLoading(false);
   };
 
-  if (loading)
-    return (
-      <AdminLayout>
-        <Box display="flex" justifyContent="center" mt={5}>
-          <CircularProgress />
-        </Box>
-      </AdminLayout>
-    );
-
   return (
-    <AdminLayout>
-      <Typography variant="h4" gutterBottom fontWeight="bold">
-        Dashboard
-      </Typography>
+    <Box
+      minHeight="100vh"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      sx={{ bgcolor: "#1a1a2e" }}
+    >
+      <Container maxWidth="xs">
+        <Paper elevation={6} sx={{ p: 4, borderRadius: 3, bgcolor: "#16213e" }}>
+          <Box display="flex" flexDirection="column" alignItems="center" mb={2}>
+            <img src="/assets/logo.png" alt="Nishaans" style={{ height: 60, marginBottom: 8 }} />
+            <Typography variant="h5" fontWeight="bold" color="white">
+              Admin Panel
+            </Typography>
+            <Typography variant="body2" sx={{ color: "#aaa" }}>
+              Restricted access only
+            </Typography>
+          </Box>
 
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <StatCard
-            title="Total Revenue"
-            value={`Tk ${totalRevenue.toLocaleString()}`}
-            icon={<AttachMoneyIcon />}
-            gradient="linear-gradient(135deg, #00c853, #69f0ae)"
-          />
-        </Grid>
+          <Divider sx={{ mb: 2, borderColor: "#333" }} />
 
-        <Grid size={{ xs: 12, md: 4 }}>
-          <StatCard
-            title="Total Orders"
-            value={totalOrders}
-            icon={<ShoppingCartIcon />}
-            gradient="linear-gradient(135deg, #2979ff, #82b1ff)"
+          <TextField
+            label="Email" type="email" value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            fullWidth margin="normal" size="small"
+            InputLabelProps={{ style: { color: "#aaa" } }}
+            InputProps={{ style: { color: "white" } }}
+            sx={{ "& .MuiOutlinedInput-root": { "& fieldset": { borderColor: "#444" } } }}
           />
-        </Grid>
+          <TextField
+            label="Password" type="password" value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            fullWidth margin="normal" size="small"
+            InputLabelProps={{ style: { color: "#aaa" } }}
+            InputProps={{ style: { color: "white" } }}
+            sx={{ "& .MuiOutlinedInput-root": { "& fieldset": { borderColor: "#444" } } }}
+          />
 
-        <Grid size={{ xs: 12, md: 4 }}>
-          <StatCard
-            title="Total Customers"
-            value={totalCustomers}
-            icon={<PeopleIcon />}
-            gradient="linear-gradient(135deg, #d500f9, #ea80fc)"
-          />
-        </Grid>
-      </Grid>
-    </AdminLayout>
+          {error && <Typography color="error" variant="body2" mt={1}>{error}</Typography>}
+
+          <Button
+            variant="contained" fullWidth onClick={handleLogin}
+            disabled={loading}
+            sx={{ mt: 2, py: 1.2, bgcolor: "#c7ab8b", "&:hover": { bgcolor: "#b5956f" }, color: "#1a1a2e", fontWeight: "bold" }}
+          >
+            {loading ? <CircularProgress size={20} /> : "Login as Admin"}
+          </Button>
+        </Paper>
+      </Container>
+    </Box>
   );
 }
-
-export default AdminDashboard;

@@ -26,7 +26,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 const drawerWidth = 240;
 
 const navItems = [
-  { text: "Dashboard", icon: <DashboardIcon />, href: "/admin" },
+  { text: "Dashboard", icon: <DashboardIcon />, href: "/admin/dashboard" },
 
   // { text: 'Customers', icon: <PeopleIcon />, href: '/admin/customers' },
 
@@ -154,7 +154,7 @@ const AdminLayout = ({ children }) => {
             color="inherit"
             onClick={async () => {
               await supabase.auth.signOut();
-              router.push("/admin/login");
+              router.push("/admin");
             }}
           >
             Sign Out
