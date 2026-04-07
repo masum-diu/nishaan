@@ -51,7 +51,7 @@ export default function ProductDetailPage() {
       const { data: productData, error: productError } = await supabase
         .from("products")
         .select(
-          "*, product_variants(id,stock,image_url,size_ids,color_id)"
+          "*, product_variants(id,stock,entries,size_ids,color_id)"
         )
         .eq("id", id)
         .single();
@@ -84,7 +84,7 @@ export default function ProductDetailPage() {
   const variantSizes = useMemo(() => {
     if (!product?.product_variants) return [];
     const allSizeIds = product.product_variants.flatMap(
-      (v) => v.size_ids || []
+      (v) => v.entries?.flatMap(e => e.size_ids || []) || []
     );
     const uniqueSizeIds = [...new Set(allSizeIds)];
     return uniqueSizeIds.map((sid) => ({
@@ -102,12 +102,11 @@ export default function ProductDetailPage() {
   // ================= VARIANT COLORS =================
   const variantColors = useMemo(() => {
     if (!product?.product_variants) return [];
-    const filteredVariants = product.product_variants.filter(
-      (v) => selectedSize ? v.size_ids?.includes(selectedSize) : true
-    );
-    const uniqueColorIds = [
-      ...new Set(filteredVariants.map((v) => v.color_id).filter(Boolean))
-    ];
+    const allEntries = product.product_variants.flatMap(v => v.entries || []);
+    const filtered = selectedSize
+      ? allEntries.filter(e => e.size_ids?.includes(selectedSize))
+      : allEntries;
+    const uniqueColorIds = [...new Set(filtered.map(e => e.color_id).filter(Boolean))];
     return uniqueColorIds.map((cid) => ({
       id: cid,
       name: colors.find((c) => c.id === cid)?.name || "Unknown",
@@ -124,30 +123,31 @@ export default function ProductDetailPage() {
   // ================= SELECT VARIANT =================
   useEffect(() => {
     if (product?.product_variants && selectedSize && selectedColor) {
-      const variant = product.product_variants.find(
-        (v) =>
-          v.size_ids?.includes(selectedSize) &&
-          v.color_id === selectedColor
+      const allEntries = product.product_variants.flatMap(v =>
+        (v.entries || []).map(e => ({ ...e, _variantId: v.id }))
       );
-      setSelectedVariant(variant || null);
+      const matched = allEntries.find(
+        e => e.size_ids?.includes(selectedSize) && e.color_id === selectedColor
+      );
+      setSelectedVariant(matched || null);
     }
   }, [selectedSize, selectedColor, product]);
 
   // ================= PRODUCT IMAGES =================
   const productImages = useMemo(() => {
-    if (!product?.product_variants) return [product?.image || "/placeholder.jpg"];
-    const allImages = [...new Set(product.product_variants.map(v => v.image_url).filter(Boolean))];
-    if (selectedVariant?.image_url) {
-      return [
-        selectedVariant.image_url,
-        ...allImages.filter(img => img !== selectedVariant.image_url)
-      ];
+    if (!product?.product_variants) return ["/placeholder.jpg"];
+    const allImages = product.product_variants.flatMap(v =>
+      v.entries?.flatMap(e => e.image_urls || []) || []
+    ).filter(Boolean);
+    if (selectedVariant?.image_urls?.length) {
+      const rest = allImages.filter(img => !selectedVariant.image_urls.includes(img));
+      return [...selectedVariant.image_urls, ...rest];
     }
-    return allImages;
+    return allImages.length ? allImages : ["/placeholder.jpg"];
   }, [product, selectedVariant]);
 
   // ================= STOCK =================
-  const totalStock = selectedVariant ? selectedVariant.stock : product?.product_variants?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;
+  const totalStock = selectedVariant ? selectedVariant.stock : product?.product_variants?.reduce((sum, v) => sum + (v.entries?.reduce((s, e) => s + (e.stock || 0), 0) || 0), 0) || 0;
 
   // ================= ACTIONS =================
   const handleAddToCart = () => {

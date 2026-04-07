@@ -70,7 +70,7 @@ export default function ShopPage() {
     const fetchProducts = async () => {
       let query = supabase.from("products")
       // include variant stock and image for display/filtering
-      .select("*, product_variants(stock,image_url)")
+      .select("*, product_variants(entries)")
       .order("created_at", {
         ascending: false,
       });
@@ -131,15 +131,19 @@ export default function ShopPage() {
     );
   };
 
-  // helper to compute total available stock (sum of variants)
-  const getProductStock = (product) => {
-    if (product.stock !== undefined && product.stock !== null) {
-      return product.stock;
+  const getProductImage = (product) => {
+    const variants = product.product_variants || [];
+    for (const v of variants) {
+      const img = v.entries?.[0]?.image_urls?.[0];
+      if (img) return img;
     }
+    return "/placeholder.jpg";
+  };
+
+  const getProductStock = (product) => {
     if (Array.isArray(product.product_variants)) {
       return product.product_variants.reduce(
-        (sum, v) => sum + (v.stock || 0),
-        0
+        (sum, v) => sum + (v.entries?.reduce((s, e) => s + (e.stock || 0), 0) || 0), 0
       );
     }
     return 0;
@@ -298,9 +302,7 @@ export default function ShopPage() {
                     <CardMedia
                       component="img"
                       height="220"
-                      image={
-                        product.product_variants?.[0]?.image_url || product.image || "/placeholder.jpg"
-                      }
+                      image={getProductImage(product)}
                       alt={product.name}
                     />
 

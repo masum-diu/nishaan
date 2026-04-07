@@ -18,11 +18,14 @@ import {
   MenuItem,
   Stack,
   CircularProgress,
-  OutlinedInput,
   Select,
+  Checkbox,
+  ListItemText,
+  OutlinedInput,
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
+import AddIcon from '@mui/icons-material/Add'
 import supabase from '@/lib/createClient'
 
 export default function ProductVariantsAdmin() {
@@ -37,11 +40,7 @@ export default function ProductVariantsAdmin() {
   const [editingVariant, setEditingVariant] = useState(null)
   const [formData, setFormData] = useState({
     product_id: '',
-    size_ids: [],
-    color_id: '',
-    stock: 0,
-    image_file: null, // selected file
-    image_url: '', // final url from storage
+    entries: [{ size_id: '', color_id: '', stock: 0, image_urls: [], image_files: [] }],
   })
 
   // -------- Fetch Data --------
@@ -82,26 +81,19 @@ export default function ProductVariantsAdmin() {
   }
 
   // -------- Form Handlers --------
+  const blankEntry = () => ({ size_ids: [], color_id: '', stock: 0, image_urls: [], image_files: [] })
+
   const handleOpenForm = (variant = null) => {
     if (variant) {
       setFormData({
         product_id: variant.product_id,
-        size_ids: variant.size_ids || [],
-        color_id: variant.color_id,
-        stock: variant.stock,
-        image_file: null,
-        image_url: variant.image_url,
+        entries: variant.entries?.length
+          ? variant.entries.map(e => ({ ...e, size_ids: e.size_ids || [], image_urls: e.image_urls || [], image_files: [] }))
+          : [blankEntry()],
       })
       setEditingVariant(variant)
     } else {
-      setFormData({
-        product_id: '',
-        size_ids: [],
-        color_id: '',
-        stock: 0,
-        image_file: null,
-        image_url: '',
-      })
+      setFormData({ product_id: '', entries: [blankEntry()] })
       setEditingVariant(null)
     }
     setOpenForm(true)
@@ -109,79 +101,76 @@ export default function ProductVariantsAdmin() {
 
   const handleCloseForm = () => setOpenForm(false)
 
-  // -------- Upload Image to Supabase Storage --------
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    setFormData({ ...formData, image_file: file })
+  const updateEntry = (index, field, value) => {
+    const updated = [...formData.entries]
+    updated[index] = { ...updated[index], [field]: value }
+    setFormData({ ...formData, entries: updated })
   }
 
+  const addEntry = () =>
+    setFormData({ ...formData, entries: [...formData.entries, blankEntry()] })
+
+  const removeEntry = (index) =>
+    setFormData({ ...formData, entries: formData.entries.filter((_, i) => i !== index) })
+
+  const handleEntryImage = (index, e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const updated = [...formData.entries]
+    updated[index] = {
+      ...updated[index],
+      image_files: [...updated[index].image_files, file],
+    }
+    setFormData({ ...formData, entries: updated })
+    e.target.value = ''
+  }
+
+  const removeEntryImage = (entryIndex, imgIndex, isNew) => {
+    const updated = [...formData.entries]
+    if (isNew) {
+      updated[entryIndex] = {
+        ...updated[entryIndex],
+        image_files: updated[entryIndex].image_files.filter((_, i) => i !== imgIndex),
+      }
+    } else {
+      updated[entryIndex] = {
+        ...updated[entryIndex],
+        image_urls: updated[entryIndex].image_urls.filter((_, i) => i !== imgIndex),
+      }
+    }
+    setFormData({ ...formData, entries: updated })
+  }
+
+  // -------- Image Upload --------
   const uploadImage = async (file) => {
-    if (!file) return ''
-    setUploading(true)
-
-    // Check user logged in
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) {
-      console.log('No user logged in')
-      setUploading(false)
-      return ''
-    }
-
     const fileName = `${Date.now()}_${file.name}`
-
-    const { data, error } = await supabase.storage
-      .from('product_variants') // bucket name
-      .upload(fileName, file)
-
-    if (error) {
-      console.log('Upload error:', error)
-      setUploading(false)
-      return ''
-    }
-
-    const { data: urlData, error: urlError } = supabase.storage
-      .from('product_variants')
-      .getPublicUrl(fileName)
-
-    if (urlError) console.log('URL error:', urlError)
-
-    setUploading(false)
+    const { error } = await supabase.storage.from('product_variants').upload(fileName, file)
+    if (error) { console.log('Upload error:', error); return '' }
+    const { data: urlData } = supabase.storage.from('product_variants').getPublicUrl(fileName)
     return urlData.publicUrl
   }
 
   // -------- Submit Variant --------
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setUploading(true)
 
-    let imageUrl = formData.image_url
-    if (formData.image_file) {
-      imageUrl = await uploadImage(formData.image_file)
-      if (!imageUrl) {
-        alert('Image upload failed. Make sure you are logged in.')
-        return
-      }
-    }
+    const entries = await Promise.all(
+      formData.entries.map(async (entry) => {
+        const newUrls = await Promise.all(entry.image_files.map(uploadImage))
+        const image_urls = [...(entry.image_urls || []), ...newUrls.filter(Boolean)]
+        return { size_ids: entry.size_ids, color_id: entry.color_id, stock: Number(entry.stock), image_urls }
+      })
+    )
 
-    const payload = {
-      product_id: formData.product_id,
-      size_ids: formData.size_ids,
-      color_id: formData.color_id,
-      stock: Number(formData.stock),
-      image_url: imageUrl,
-    }
+    const payload = { product_id: formData.product_id, entries }
 
     try {
       if (editingVariant) {
-        const { error } = await supabase
-          .from('product_variants')
-          .update(payload)
-          .eq('id', editingVariant.id)
+        const { error } = await supabase.from('product_variants').update(payload).eq('id', editingVariant.id)
         if (error) console.log('Update error:', error)
       } else {
-        const { error } = await supabase
-          .from('product_variants')
-          .insert([payload])
+        const { error } = await supabase.from('product_variants').insert([payload])
         if (error) console.log('Insert error:', error)
       }
       fetchVariants()
@@ -189,6 +178,7 @@ export default function ProductVariantsAdmin() {
     } catch (err) {
       console.log('Submit error:', err)
     }
+    setUploading(false)
   }
 
   // -------- Delete Variant --------
@@ -217,40 +207,33 @@ export default function ProductVariantsAdmin() {
           <TableHead>
             <TableRow>
               <TableCell>Product</TableCell>
-              <TableCell>Sizes</TableCell>
-              <TableCell>Color</TableCell>
-              <TableCell>Image</TableCell>
-              <TableCell>Stock</TableCell>
+              <TableCell>Entries (Size / Color / Stock / Image)</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {variants.map((v) => (
               <TableRow key={v.id}>
+                <TableCell>{products.find((p) => p.id === v.product_id)?.name || '-'}</TableCell>
                 <TableCell>
-                  {products.find((p) => p.id === v.product_id)?.name || '-'}
+                  {v.entries?.map((e, i) => (
+                    <Stack key={i} direction="row" spacing={1} alignItems="center" mb={0.5}>
+                      <Stack direction="row" spacing={0.5}>
+                        {e.image_urls?.map((url, j) => (
+                          <img key={j} src={url} alt="" style={{ width: 36, height: 36, objectFit: 'cover' }} />
+                        ))}
+                      </Stack>
+                      <Box fontSize={12}>
+                        {e.size_ids?.map(id => sizes.find(s => s.id === id)?.name).filter(Boolean).join(', ') || '?'} /
+                        {colors.find((c) => c.id === e.color_id)?.name || '?'} /
+                        Stock: {e.stock}
+                      </Box>
+                    </Stack>
+                  )) || '-'}
                 </TableCell>
                 <TableCell>
-                  {v.size_ids?.map((id) => sizes.find((s) => s.id === id)?.name).join(', ') || '-'}
-                </TableCell>
-                <TableCell>{colors.find((c) => c.id === v.color_id)?.name || '-'}</TableCell>
-                <TableCell>
-                  {v.image_url ? (
-                    <img
-                      src={v.image_url}
-                      alt="variant"
-                      style={{ width: 50, height: 50, objectFit: 'cover' }}
-                    />
-                  ) : '-'}
-                </TableCell>
-                <TableCell>{v.stock}</TableCell>
-                <TableCell>
-                  <IconButton onClick={() => handleOpenForm(v)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton color="error" onClick={() => handleDelete(v.id)}>
-                    <DeleteIcon />
-                  </IconButton>
+                  <IconButton onClick={() => handleOpenForm(v)}><EditIcon /></IconButton>
+                  <IconButton color="error" onClick={() => handleDelete(v.id)}><DeleteIcon /></IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -262,80 +245,89 @@ export default function ProductVariantsAdmin() {
       <Dialog open={openForm} onClose={handleCloseForm} fullWidth maxWidth="sm">
         <DialogTitle>{editingVariant ? 'Edit Variant' : 'Add Variant'}</DialogTitle>
         <DialogContent>
+          {/* Product */}
           <TextField
-            select
-            fullWidth
-            margin="normal"
-            label="Product"
+            select fullWidth margin="normal" label="Product"
             value={formData.product_id}
             onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
           >
-            {products.map((p) => (
-              <MenuItem key={p.id} value={p.id}>
-                {p.name}
-              </MenuItem>
-            ))}
+            {products.map((p) => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
           </TextField>
 
-          {/* Sizes Multi-Select */}
-          <Select
-            multiple
-            fullWidth
-            value={formData.size_ids}
-            onChange={(e) => setFormData({ ...formData, size_ids: e.target.value })}
-            input={<OutlinedInput label="Sizes" />}
-            renderValue={(selected) =>
-              selected.map((id) => sizes.find((s) => s.id === id)?.name).join(', ')
-            }
-            margin="normal"
-          >
-            {sizes.map((s) => (
-              <MenuItem key={s.id} value={s.id}>
-                {s.name}
-              </MenuItem>
-            ))}
-          </Select>
-
-          {/* Color */}
-          <TextField
-            select
-            fullWidth
-            margin="normal"
-            label="Color"
-            value={formData.color_id}
-            onChange={(e) => setFormData({ ...formData, color_id: e.target.value })}
-          >
-            {colors.map((c) => (
-              <MenuItem key={c.id} value={c.id}>
-                {c.name}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          {/* Image Upload */}
-          <Box mt={2} mb={2}>
-            <input type="file" accept="image/*" onChange={handleFileChange} />
-            {uploading && <Typography>Uploading...</Typography>}
-            {formData.image_url && (
-              <Box mt={1}>
-                <img
-                  src={formData.image_url}
-                  alt="variant"
-                  style={{ width: 80, height: 80, objectFit: 'cover' }}
+          {/* Entries: Size + Color + Stock + Image */}
+          {formData.entries.map((entry, i) => (
+            <Box key={i} border="1px solid #e0e0e0" borderRadius={1} p={1.5} mt={1.5}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Select
+                  multiple
+                  size="small"
+                  displayEmpty
+                  value={entry.size_ids}
+                  onChange={(e) => updateEntry(i, 'size_ids', e.target.value)}
+                 
+                  input={<OutlinedInput />}
+                  renderValue={(selected) =>
+                    selected.length === 0
+                      ? <span style={{ color: '#aaa' }}>Sizes</span>
+                      : selected.map(id => sizes.find(s => s.id === id)?.name).join(', ')
+                  }
+                  sx={{ flex: 1 }}
+                  MenuProps={{ PaperProps: { style: { maxHeight: 200 } } }}
+                >
+                  {sizes.map((s) => (
+                    <MenuItem key={s.id} value={s.id}>
+                      <Checkbox checked={(entry.size_ids || []).includes(s.id)} size="small" />
+                      <ListItemText primary={s.name} />
+                    </MenuItem>
+                  ))}
+                </Select>
+                <TextField
+                  select size="small" label="Color" value={entry.color_id} sx={{ flex: 1 }}
+                  onChange={(e) => updateEntry(i, 'color_id', e.target.value)} 
+                >
+                  {colors.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+                </TextField>
+                <TextField
+                  size="small" type="number" label="Stock" value={entry.stock} sx={{ width: 80 }}
+                  onChange={(e) => updateEntry(i, 'stock', e.target.value)}
                 />
-              </Box>
-            )}
-          </Box>
-
-          {/* Stock */}
-          <TextField
-            fullWidth
-            type="number"
-            margin="normal"
-            label="Stock"
-            value={formData.stock}
-            onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-          />
+                <IconButton size="small" color="error" onClick={() => removeEntry(i)}
+                  disabled={formData.entries.length === 1}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+              <Stack direction="row" flexWrap="wrap" gap={1} mt={1}>
+                {entry.image_urls?.map((url, j) => (
+                  <Box key={`saved-${j}`} position="relative">
+                    <img src={url} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 4 }} />
+                    <IconButton size="small" color="error"
+                      sx={{ position: 'absolute', top: -6, right: -6, bgcolor: 'white', p: 0.2 }}
+                      onClick={() => removeEntryImage(i, j, false)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
+                {entry.image_files?.map((file, j) => (
+                  <Box key={`new-${j}`} position="relative">
+                    <img src={URL.createObjectURL(file)} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 4 }} />
+                    <IconButton size="small" color="error"
+                      sx={{ position: 'absolute', top: -6, right: -6, bgcolor: 'white', p: 0.2 }}
+                      onClick={() => removeEntryImage(i, j, true)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
+                <Button size="small" component="label" variant="outlined" sx={{ height: 56 }}>
+                  + Image
+                  <input type="file" accept="image/*" hidden onChange={(e) => handleEntryImage(i, e)} />
+                </Button>
+              </Stack>
+            </Box>
+          ))}
+          <Button size="small" startIcon={<AddIcon />} onClick={addEntry} sx={{ mt: 1.5 }}>
+            Add More
+          </Button>
+          {uploading && <Typography variant="caption" ml={1}>Uploading...</Typography>}
         </DialogContent>
 
         <DialogActions>
