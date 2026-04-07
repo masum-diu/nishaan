@@ -39,7 +39,7 @@ export default function AdminLoginPage() {
         await supabase.auth.signOut();
         throw new Error("Access denied. Admin only.");
       }
-      router.push("/admin");
+      router.push("/admin/dashboard");
     } catch (err) {
       setError(err.message || "Something went wrong");
     } finally {
