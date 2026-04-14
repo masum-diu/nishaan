@@ -109,6 +109,15 @@ useEffect(() => {
     }
 
     alert("Order placed successfully!");
+    if (typeof window !== 'undefined' && window.fbq) {
+      fbq('track', 'Purchase', {
+        content_ids: cartItems.map(i => i.id),
+        content_type: 'product',
+        value: total,
+        currency: 'BDT',
+        num_items: cartItems.reduce((a, i) => a + i.quantity, 0),
+      });
+    }
     clearCart();
     setLoading(false);
     router.push("/");

@@ -149,6 +149,20 @@ export default function ProductDetailPage() {
   // ================= STOCK =================
   const totalStock = selectedVariant ? selectedVariant.stock : product?.product_variants?.reduce((sum, v) => sum + (v.entries?.reduce((s, e) => s + (e.stock || 0), 0) || 0), 0) || 0;
 
+  // ================= PIXEL =================
+  useEffect(() => {
+    if (!product) return;
+    if (typeof window !== 'undefined' && window.fbq) {
+      fbq('track', 'ViewContent', {
+        content_name: product.name,
+        content_ids: [product.id],
+        content_type: 'product',
+        value: calculateFinalPrice(product),
+        currency: 'BDT',
+      });
+    }
+  }, [product]);
+
   // ================= ACTIONS =================
   const handleAddToCart = () => {
     if (!selectedSize || !selectedColor) {
@@ -162,6 +176,15 @@ export default function ProductDetailPage() {
       color: selectedColor,
       variant: selectedVariant,
     });
+    if (typeof window !== 'undefined' && window.fbq) {
+      fbq('track', 'AddToCart', {
+        content_name: product.name,
+        content_ids: [product.id],
+        content_type: 'product',
+        value: calculateFinalPrice(product) * quantity,
+        currency: 'BDT',
+      });
+    }
     setError("");
   };
 

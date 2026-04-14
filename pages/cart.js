@@ -61,6 +61,19 @@ const CartPage = () => {
     setSubtotal(newSubtotal);
   }, [cartItems]);
 
+  // InitiateCheckout pixel event
+  const handleCheckout = () => {
+    if (typeof window !== 'undefined' && window.fbq) {
+      fbq('track', 'InitiateCheckout', {
+        content_ids: cartItems.map(i => i.id),
+        num_items: cartItems.reduce((a, i) => a + i.quantity, 0),
+        value: subtotal,
+        currency: 'BDT',
+      });
+    }
+    router.push("/checkout");
+  };
+
   if (cartItems.length === 0) {
     return (
       <>
@@ -297,7 +310,7 @@ const CartPage = () => {
                     size="large"
                     fullWidth
                     sx={{ mt: 3 }}
-                    onClick={() => router.push("/checkout")}
+                    onClick={() => handleCheckout()}
                   >
                     Proceed to Checkout
                   </Button>
