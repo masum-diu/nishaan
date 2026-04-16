@@ -138,7 +138,7 @@ const CartPage = () => {
                           <CardMedia
                             component="img"
                             image={
-                              item.variant?.image_url ||
+                              item.variant?.image_urls?.[0] ||
                               "/placeholder.jpg"
                             }
                             alt={item.name}

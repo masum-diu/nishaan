@@ -157,7 +157,7 @@ useEffect(() => {
                         alignItems="center"
                       >
                         <img
-                          src={item.variant?.image_url || item.image}
+                          src={item.variant?.image_urls?.[0] || item.image}
                           alt={item.name}
                           style={{ width: 80, height: 80, borderRadius: 8 }}
                         />
