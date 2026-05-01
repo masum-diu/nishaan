@@ -321,31 +321,26 @@ export default function ProductDetailPage() {
 
                 {/* Color */}
                 <Box>
-                  <Typography fontWeight="bold" fontSize="0.88rem" mb={0.8}>
-                    Color:
+                  <Typography fontWeight="bold" fontSize="0.88rem" mb={1}>
+                    Color: <span style={{ color: "#c7ab8b", fontWeight: "bold" }}>
+                      {variantColors.find(c => c.id === selectedColor)?.name || ""}
+                    </span>
                   </Typography>
-                  <Stack direction="row" spacing={1} flexWrap="wrap">
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.2 }}>
                     {variantColors.map(c => (
                       <Box key={c.id} onClick={() => setSelectedColor(c.id)}
                         sx={{
-                          display: "flex", flexDirection: "column", alignItems: "center",
-                          cursor: "pointer", gap: 0.5,
-                        }}
-                      >
-                        <Box sx={{
-                          width: 30, height: 30, borderRadius: "50%",
-                          bgcolor: c.hex,
-                          border: selectedColor === c.id ? "3px solid #333" : "3px solid transparent",
-                          outline: selectedColor === c.id ? "2px solid #c7ab8b" : "2px solid #ddd",
+                          width: 34, height: 34, borderRadius: "50%",
+                          bgcolor: c.hex, cursor: "pointer", flexShrink: 0,
+                          border: selectedColor === c.id ? "3px solid #fff" : "3px solid transparent",
+                          outline: selectedColor === c.id ? "2.5px solid #c7ab8b" : "2px solid #ddd",
+                          boxShadow: selectedColor === c.id ? "0 2px 8px rgba(0,0,0,0.25)" : "0 1px 3px rgba(0,0,0,0.1)",
                           transition: "all 0.2s",
-                        }} />
-                        <Typography fontSize="0.65rem" color={selectedColor === c.id ? "#c7ab8b" : "text.secondary"}
-                          fontWeight={selectedColor === c.id ? "bold" : "normal"}>
-                          {c.name}
-                        </Typography>
-                      </Box>
+                          "&:hover": { outline: "2.5px solid #c7ab8b", transform: "scale(1.12)", boxShadow: "0 3px 10px rgba(0,0,0,0.2)" },
+                        }}
+                      />
                     ))}
-                  </Stack>
+                  </Box>
                 </Box>
 
                 {error && <Typography color="error" variant="body2">{error}</Typography>}
