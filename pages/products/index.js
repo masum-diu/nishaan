@@ -29,10 +29,14 @@ export default function ShopPage() {
   const [subcategories, setSubcategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [categoryId, setCategoryId] = useState("all"); // category filter
-  const [subcategoryId, setSubcategoryId] = useState("all"); // subcategory filter
+  const [categoryId, setCategoryId] = useState("all");
+  const [subcategoryId, setSubcategoryId] = useState("all");
   const [inStockOnly, setInStockOnly] = useState(false);
   const [selectedSizes, setSelectedSizes] = useState([]);
+
+  useEffect(() => {
+    if (router.query.category) setCategoryId(router.query.category);
+  }, [router.query.category]);
 
   // ================= FETCH CATEGORIES & SUBCATEGORIES =================
   useEffect(() => {
