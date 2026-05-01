@@ -66,6 +66,8 @@ export default function Home() {
     return products.filter(p => subcatIds.includes(p.subcategory_id));
   };
 
+  const goToCategory = (categoryId) => router.push(`/products?category=${categoryId}`);
+
   const ProductCard = ({ product }) => {
     const discount = getDiscount(product);
     const finalPrice = calculateFinalPrice(product);
@@ -147,7 +149,7 @@ export default function Home() {
                     <Box sx={{ width: 4, height: 24, bgcolor: "#c7ab8b", borderRadius: 1 }} />
                     <Typography variant="h5" fontWeight="bold">{category.name}</Typography>
                   </Stack>
-                  <Button size="small" onClick={() => router.push(`/products?category=${category.id}`)}
+                  <Button size="small" onClick={() => goToCategory(category.id)}
                     sx={{ color: "#c7ab8b", textTransform: "none", fontWeight: "bold" }}>
                     View All →
                   </Button>
@@ -200,18 +202,16 @@ export default function Home() {
             <Typography variant="h5" fontWeight="bold">Shop by Category</Typography>
           </Stack>
 
-          {/* First category big, rest small */}
           {categorie.length > 0 && (
             <Grid container spacing={2}>
               {/* Big featured card */}
               <Grid size={{ xs: 12, md: 6 }}>
                 <Box
-                  onClick={() => router.push(`/products?category=${categorie[0].id}`)}
+                  onClick={() => goToCategory(categorie[0].id)}
                   sx={{
                     position: "relative", borderRadius: 4, overflow: "hidden",
                     cursor: "pointer", height: { xs: 220, md: 380 },
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-                    transition: "all 0.3s",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)", transition: "all 0.3s",
                     "&:hover": { transform: "translateY(-4px)", boxShadow: "0 16px 40px rgba(0,0,0,0.2)" },
                     "&:hover .cat-img-0": { transform: "scale(1.06)" },
                   }}
@@ -237,18 +237,17 @@ export default function Home() {
                 </Box>
               </Grid>
 
-              {/* Right side grid */}
+              {/* Right side 2x2 grid */}
               <Grid size={{ xs: 12, md: 6 }}>
-                <Grid container spacing={2} sx={{ height: "100%" }}>
+                <Grid container spacing={2}>
                   {categorie.slice(1, 5).map((category, idx) => (
                     <Grid size={{ xs: 6 }} key={category.id}>
                       <Box
-                        onClick={() => router.push(`/products?category=${category.id}`)}
+                        onClick={() => goToCategory(category.id)}
                         sx={{
                           position: "relative", borderRadius: 3, overflow: "hidden",
                           cursor: "pointer", height: { xs: 120, md: 178 },
-                          boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
-                          transition: "all 0.3s",
+                          boxShadow: "0 4px 16px rgba(0,0,0,0.10)", transition: "all 0.3s",
                           "&:hover": { transform: "translateY(-4px)", boxShadow: "0 10px 28px rgba(0,0,0,0.18)" },
                           [`&:hover .cat-img-${idx + 1}`]: { transform: "scale(1.08)" },
                         }}
@@ -276,16 +275,15 @@ export default function Home() {
                 </Grid>
               </Grid>
 
-              {/* Remaining categories in a row */}
+              {/* Remaining categories */}
               {categorie.slice(5).map((category) => (
                 <Grid size={{ xs: 6, sm: 4, md: 3 }} key={category.id}>
                   <Box
-                    onClick={() => router.push(`/products?category=${category.id}`)}
+                    onClick={() => goToCategory(category.id)}
                     sx={{
                       position: "relative", borderRadius: 3, overflow: "hidden",
                       cursor: "pointer", height: 150,
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-                      transition: "all 0.3s",
+                      boxShadow: "0 4px 16px rgba(0,0,0,0.08)", transition: "all 0.3s",
                       "&:hover": { transform: "translateY(-4px)", boxShadow: "0 10px 28px rgba(0,0,0,0.15)" },
                       "&:hover .cat-img-rest": { transform: "scale(1.08)" },
                     }}
